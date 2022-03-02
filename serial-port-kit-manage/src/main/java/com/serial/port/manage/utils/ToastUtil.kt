@@ -22,7 +22,7 @@ import com.serial.port.manage.R
  * @author zhouhuan
  * @time 2020/11/30 23:19
  */
-object ToastUtil {
+internal object ToastUtil {
 
     private var mHandler: Handler? = null
 

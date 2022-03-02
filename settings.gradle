@@ -15,5 +15,4 @@ dependencyResolutionManagement {
 rootProject.name = "SerialPortKit"
 include ':simple-app'
 include ':serial-port-kit-core'
-include ':serial-port-kit-command'
 include ':serial-port-kit-manage'

@@ -39,5 +39,4 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 
     implementation(project(":serial-port-kit-core"))
-    api(project(":serial-port-kit-command"))
 }

@@ -1,7 +1,6 @@
 package com.serial.port.manage.data
 
-import com.serial.port.manage.config.SerialPortConfig
-import com.serial.port.manage.SerialPortHelper
+import com.serial.port.manage.SerialPortManager
 
 /**
  * 数据处理中心
@@ -9,30 +8,21 @@ import com.serial.port.manage.SerialPortHelper
  * @author zhouhuan
  * @time 2021/10/26
  */
-class DataProcess(config: SerialPortConfig) {
-    /**
-     * 是否为自定义协议
-     *
-     * @return true 自定义协议
-     */
+class DataProcess(val manager: SerialPortManager) {
     /**
      * 是否按照自定义协议读取数据信息
      */
-    val isCustom: Boolean = config.isCustom
-    /**
-     * 获取最大读取长度
-     *
-     * @return 最大长度
-     */
+    val isCustom: Boolean = manager.config.isCustom
+
     /**
      * 最大读取长度
      */
-    val maxSize: Int = config.maxSize
+    val maxSize: Int = manager.config.maxSize
 
     /**
      * 是否按最大接收长度进行返回
      */
-    private val isReceiveMaxSize: Boolean = config.isReceiveMaxSize
+    private val isReceiveMaxSize: Boolean = manager.config.isReceiveMaxSize
 
     /**
      * 记录读取数据的大小
@@ -42,7 +32,7 @@ class DataProcess(config: SerialPortConfig) {
     /**
      * 串口接收数据保存数组
      */
-    private val mSerialBuffer: ByteArray = ByteArray(config.maxSize)
+    private val mSerialBuffer: ByteArray = ByteArray(maxSize)
 
     /**
      * 根据配置对串口数据进行处理
@@ -124,7 +114,14 @@ class DataProcess(config: SerialPortConfig) {
      * @param size   大小
      */
     private fun sendMessage(buffer: ByteArray, size: Int) {
-        SerialPortHelper.sendMessage(buffer, size)
+        manager.helper.sendMessage(WrapReceiverData(buffer, size))
+    }
+
+    /**
+     * 检查超时无效任务
+     */
+    fun checkTimeOutTask() {
+        manager.helper.checkTimeOutTask()
     }
 
     /**

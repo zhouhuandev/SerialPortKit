@@ -1,18 +1,18 @@
 package com.serial.port.manage
 
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import com.serial.port.kit.core.SerialPort
-import com.serial.port.manage.config.SerialPortConfig
+import com.serial.port.manage.data.BaseSerialPortTask
 import com.serial.port.manage.data.DataProcess
-import com.serial.port.manage.data.SerialReadThread
-import com.serial.port.manage.listener.OnS0DataReceiverListener
+import com.serial.port.manage.data.SerialPortTask
+import com.serial.port.manage.thread.SerialReadThread
+import com.serial.port.manage.data.WrapReceiverData
+import com.serial.port.manage.listener.OnRetryCall
 import java.io.File
 import java.io.IOException
-import java.lang.ref.WeakReference
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.math.abs
 
 /**
  * 串口帮助类
@@ -20,61 +20,49 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
  * @author zhouhuan
  * @time 2021/10/26
  */
-object SerialPortHelper {
-    private const val TAG = "SerialPortHelper"
+internal class SerialPortHelper(private val manager: SerialPortManager) {
+
+    companion object {
+        private const val TAG = "SerialPortHelper"
+    }
 
     /**
      * 串口是否已经打开
      *
-     * @return true' 打开
+     * @return true 打开
      */
     var isOpenDevice = false
         private set
+
     /**
-     * 重试机制是否启动(重新打开串口)
-     *
-     * @return true 打开
+     * 重试
      */
-    /**
-     * 设置重试机制
-     *
-     *  false 关闭重试机制
-     */
-    var isRetry = false
+    var onRetryCall: OnRetryCall? = null
 
     private var mSerialPort: SerialPort? = null
-
-    /**
-     * 获取串口配置信息
-     *
-     * @return 配置
-     */
-    private var config: SerialPortConfig? = null
     private var serialReadThread: SerialReadThread? = null
     private val readWriteLock = ReentrantReadWriteLock()
     private val readLock: Lock = readWriteLock.readLock()
-    private val writeLock: Lock = readWriteLock.writeLock()
-    private val M_MAIN_LOOPER_HANDLER = Handler(Looper.getMainLooper())
+    private val tasks: MutableList<BaseSerialPortTask> = ArrayList()
 
     /**
-     * 打开串口失败
+     * 打开串口
      *
-     * @param config 配置
+     * @param manager SerialPortManager
      * @return true 打开成功 false 打开失败
      */
-    fun openDevice(config: SerialPortConfig): Boolean {
-        requireNotNull(config.path) { "You not have setting the device path !" }
-        this.config = config
+    private fun openDevice(manager: SerialPortManager): Boolean {
+        requireNotNull(manager.config.path) { "You not have setting the device path!" }
         try {
-            mSerialPort = SerialPort(File(config.path), config.baudRate)
+            mSerialPort = SerialPort(File(manager.config.path), manager.config.baudRate)
             isOpenDevice = true
         } catch (e: Exception) {
             mSerialPort = null
             isOpenDevice = false
-            Log.e(TAG, "openDevice: open device is fail.", e)
+            Log.e(TAG, "Failed to open device.", e)
         }
         if (isOpenDevice) {
-            val processingData = DataProcess(config)
+            val processingData = DataProcess(manager)
             serialReadThread = SerialReadThread(mSerialPort!!, processingData)
         }
         return isOpenDevice
@@ -86,134 +74,88 @@ object SerialPortHelper {
     fun closeDevice() {
         if (isOpenDevice) {
             isOpenDevice = false
-            mSerialPort!!.close()
-            val isSuccess = serialReadThread!!.stopReadDataThread()
+            mSerialPort?.close()
+            val isSuccess = serialReadThread?.stopReadDataThread() ?: false
             if (isSuccess) {
                 try {
                     serialReadThread = null
-                    mSerialPort!!.inputStream.close()
-                    mSerialPort!!.outputStream.close()
+                    mSerialPort?.inputStream?.close()
+                    mSerialPort?.outputStream?.close()
                 } catch (e: IOException) {
-                    Log.e(TAG, "closeDevice: 关闭串口数据流失败", e)
+                    Log.e(TAG, "Failed to close serial data stream.", e)
                 }
             }
             mSerialPort = null
         } else {
-            Log.d(TAG, "closeDevice: 串口尚未开启，无需关闭")
+            if (manager.config.debug) {
+                Log.d(TAG, "The serial port has not been opened, no need to close it")
+            }
         }
     }
 
     /**
      * 重新打开串口
      *
-     * @param config 配置信息，若不为 null，则使用其配置进行重新启动
      * @return true 打开成功 false 打开失败
      */
-    fun reOpenDevice(config: SerialPortConfig?): Boolean {
+    fun reOpenDevice(): Boolean {
         closeDevice()
-        // 为了保障串口第一次打开的使用此方法，以防止配置 this.config 尚未初始化
-        require(!(config == null && this.config == null)) { "You not have setting the device config !" }
-        return openDevice((config ?: this.config)!!)
-    }
-
-    /**
-     * 发送指令到串口
-     *
-     * @param cmd 指令
-     * @return true 发送成功
-     */
-    fun sendCmds(cmd: String): Boolean {
-        val mBuffer = """$cmd
-""".toByteArray()
-        return sendBuffer(mBuffer)
+        return openDevice(manager)
     }
 
     /**
      * 发送数据到串口
-     *
-     * @param mBuffer 数据
-     * @return true 发送成功
+     * @param task 发送数据任务
      */
-    fun sendBuffer(mBuffer: ByteArray?): Boolean {
+    fun sendBuffer(task: BaseSerialPortTask): Boolean {
         if (!isOpenDevice) {
-            Log.d(TAG, "sendBuffer: You not open device !!!")
+            if (manager.config.debug) {
+                Log.d(TAG, "You not open device !!!")
+            }
             return false
         }
-        var result = true
-        try {
-            mSerialPort!!.outputStream.write(mBuffer)
-            mSerialPort!!.outputStream.flush()
-        } catch (e: IOException) {
-            // 捕获到发送指令失败，代表串口连接有问题，打开重试机制（重新打开串口）
-            result = false
-            isRetry = true
+        var isSendSuccess = true
+        mSerialPort?.apply {
+            task.stream(outputStream = outputStream)
         }
-        return result
-    }
-
-    /**
-     * 增加串口通讯监听
-     *
-     * @param onS0DataReceiverListener 监听器
-     */
-    fun addS0DataReceiverListener(onS0DataReceiverListener: OnS0DataReceiverListener) {
-        writeLock.lock()
-        try {
-            if (config != null) {
-                val onS0DataReceiverListeners = config!!.getOnS0DataReceiverListeners()
-                val listenerWeakReference = WeakReference(onS0DataReceiverListener)
-                onS0DataReceiverListeners.add(listenerWeakReference)
+        manager.dispatcher.dispatch(task) {
+            isSendSuccess = it.isSendSuccess
+            if (isSendSuccess) {
+                it.sendTime = System.currentTimeMillis()
             }
-        } finally {
-            writeLock.unlock()
         }
-    }
-
-    /**
-     * 移除串口通讯监听
-     *
-     * @param onS0DataReceiverListener 监听器
-     */
-    fun removeS0DataReceiverListener(onS0DataReceiverListener: OnS0DataReceiverListener) {
-        writeLock.lock()
-        try {
-            if (config != null) {
-                val onS0DataReceiverListeners: MutableList<WeakReference<OnS0DataReceiverListener>> =
-                    config!!.getOnS0DataReceiverListeners()
-                val iterator = onS0DataReceiverListeners.iterator()
-                while (iterator.hasNext()) {
-                    val reference = iterator.next()
-                    if (reference.get() == null) {
-                        iterator.remove()
-                        continue
-                    }
-                    if (reference.get() === onS0DataReceiverListener) {
-                        iterator.remove()
-                    }
+        if (!isSendSuccess) {
+            // 捕获到发送指令失败，代表串口连接有问题，打开重试机制（重新打开串口且重新发送命令）
+            onRetryCall?.let {
+                if (it.retry()) {
+                    it.call(task)
+                } else {
+                    task.onDataReceiverListener()
+                        .onFailed(
+                            task.sendWrapData(),
+                            "Failed to send, retried ${manager.retryCount} time"
+                        )
                 }
             }
-        } finally {
-            writeLock.unlock()
+        } else {
+            if (!tasks.contains(task)) {
+                tasks.add(task)
+            }
         }
+        return isSendSuccess
     }
 
     /**
-     * 发送回调
+     * 收到串口端数据
      *
-     * @param buffer 回调数据
-     * @param size   大小
+     * @param data 回调数据
      */
-    fun sendMessage(buffer: ByteArray, size: Int) {
+    fun sendMessage(data: WrapReceiverData) {
         readLock.lock()
         try {
-            if (config != null) {
-                val onS0DataReceiverListeners = config!!.getOnS0DataReceiverListeners()
-                for (i in onS0DataReceiverListeners.indices.reversed()) {
-                    val listener = onS0DataReceiverListeners[i].get()
-                    if (listener != null) {
-                        runOnUiThread { listener.onDataReceive(buffer, size) }
-                    }
-                }
+            tasks.forEach { task ->
+                task.waitTime = System.currentTimeMillis()
+                task.onDataReceiverListener().onSuccess(data)
             }
         } finally {
             readLock.unlock()
@@ -221,22 +163,40 @@ object SerialPortHelper {
     }
 
     /**
-     * 切换到主线程
-     *
-     * @param runnable Runnable
+     * 检查超时无效任务
      */
-    private fun runOnUiThread(runnable: Runnable) {
-        M_MAIN_LOOPER_HANDLER.post(runnable)
-    }
-
-    /**
-     * 清除配置信息
-     */
-    fun clear() {
-        if (config != null) {
-            config!!.getOnS0DataReceiverListeners().clear()
-            config = null
+    fun checkTimeOutTask() {
+        readLock.lock()
+        try {
+            val invalidTasks: MutableList<SerialPortTask> = ArrayList()
+            tasks.forEach { task ->
+                if (isTimeOut(task)) {
+                    task.onDataReceiverListener().onTimeOut()
+                    invalidTasks.add(task)
+                }
+            }
+            // 移除无效任务
+            invalidTasks.forEach { task ->
+                tasks.remove(task)
+            }
+        } finally {
+            readLock.unlock()
         }
     }
 
+    /**
+     * 检测是否超时
+     */
+    private fun isTimeOut(task: BaseSerialPortTask): Boolean {
+        val currentTimeMillis = System.currentTimeMillis()
+        return if (task.waitTime == 0L) {
+            // 表示一直没收到数据
+            val sendOffset = abs(currentTimeMillis - task.sendTime)
+            sendOffset > task.sendWrapData().sendOutTime
+        } else {
+            // 有接收到过数据，但是距离上一个数据已经超时
+            val waitOffset = abs(currentTimeMillis - task.waitTime)
+            waitOffset > task.sendWrapData().waitOutTime
+        }
+    }
 }
