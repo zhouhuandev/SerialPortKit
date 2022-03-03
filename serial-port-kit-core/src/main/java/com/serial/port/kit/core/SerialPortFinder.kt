@@ -38,15 +38,15 @@ class SerialPortFinder {
             if (mDrivers == null) {
                 mDrivers = Vector()
                 val r = LineNumberReader(FileReader("/proc/tty/drivers"))
-                var l: String
-                while (r.readLine().also { l = it } != null) {
+                var line: String?
+                while (r.readLine().also { line = it } != null) {
                     // Issue 3:
                     // Since driver name may contain spaces, we do not extract driver name with split()
-                    val drivername = l.substring(0, 0x15).trim { it <= ' ' }
-                    val w = l.split(" +").toTypedArray()
+                    val driverName = line!!.substring(0, 0x15).trim { it <= ' ' }
+                    val w = line!!.split(" +").toTypedArray()
                     if (w.size >= 5 && w[w.size - 1] == "serial") {
-                        Log.e(TAG, "Found new driver " + drivername + " on " + w[w.size - 4])
-                        mDrivers!!.add(Driver(drivername, w[w.size - 4]))
+                        Log.e(TAG, "Found new driver " + driverName + " on " + w[w.size - 4])
+                        mDrivers!!.add(Driver(driverName, w[w.size - 4]))
                     }
                 }
                 r.close()
