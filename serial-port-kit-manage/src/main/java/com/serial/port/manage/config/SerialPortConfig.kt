@@ -1,9 +1,6 @@
 package com.serial.port.manage.config
 
 import com.serial.port.manage.listener.OnDataCheckCall
-import com.serial.port.manage.listener.OnDataReceiverListener
-import java.lang.ref.WeakReference
-import java.util.ArrayList
 
 /**
  * 串口配置信息
@@ -15,12 +12,12 @@ data class SerialPortConfig(
     /**
      * 串口地址
      */
-    val path: String,
+    var path: String,
 
     /**
      * 波特率
      */
-    val baudRate: Int = 115200,
+    var baudRate: Int = 115200,
 
     /**
      * 最大读取长度

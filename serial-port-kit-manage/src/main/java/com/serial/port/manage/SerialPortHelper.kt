@@ -44,6 +44,7 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
     private val readWriteLock = ReentrantReadWriteLock()
     private val readLock: Lock = readWriteLock.readLock()
     private val tasks: MutableList<BaseSerialPortTask> = ArrayList()
+    private val invalidTasks: MutableList<SerialPortTask> = ArrayList()
 
     /**
      * 打开串口
@@ -88,7 +89,7 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
             mSerialPort = null
         } else {
             if (manager.config.debug) {
-                Log.d(TAG, "The serial port has not been opened, no need to close it")
+                Log.d(TAG, "The serial port has not been opened, no need to close it.")
             }
         }
     }
@@ -110,7 +111,7 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
     fun sendBuffer(task: BaseSerialPortTask): Boolean {
         if (!isOpenDevice) {
             if (manager.config.debug) {
-                Log.d(TAG, "You not open device !!!")
+                Log.d(TAG, "You did not open the drive device!")
             }
             return false
         }
@@ -133,7 +134,7 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
                     task.onDataReceiverListener()
                         .onFailed(
                             task.sendWrapData(),
-                            "Failed to send, retried ${manager.retryCount} time"
+                            "Failed to send, retried ${manager.retryCount} time."
                         )
                 }
             }
@@ -155,7 +156,9 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
         try {
             tasks.forEach { task ->
                 task.waitTime = System.currentTimeMillis()
-                task.onDataReceiverListener().onSuccess(data)
+                task.onDataReceiverListener().onSuccess(data.apply {
+                    duration = abs(task.waitTime - task.sendTime)
+                })
             }
         } finally {
             readLock.unlock()
@@ -168,7 +171,7 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
     fun checkTimeOutTask() {
         readLock.lock()
         try {
-            val invalidTasks: MutableList<SerialPortTask> = ArrayList()
+            if (invalidTasks.isNotEmpty()) invalidTasks.clear()
             tasks.forEach { task ->
                 if (isTimeOut(task)) {
                     task.onDataReceiverListener().onTimeOut()

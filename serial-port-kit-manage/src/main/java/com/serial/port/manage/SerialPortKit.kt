@@ -68,7 +68,8 @@ class SerialPortKit private constructor(builder: Builder) {
         }
 
         private fun checkParams() {
-            check(path != "") { "Path is must important parameters，and it's not null !" }
+            check(path != "") { "Path is must important parameters，and it cannot be null !" }
+            check(baudRate >= 0) { "BaudRate is must important parameters，and it cannot be less than 0 !" }
             check(retryCount in 1..SerialPortManager.MAX_RETRY_COUNT) { "The retryCount is $retryCount, The number of retries should be between 0 and 3 !" }
             if (isCustom) {
                 checkNotNull(dataCheckCall) { "isCustom is ture, dataCheckCall is not null !" }

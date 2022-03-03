@@ -1,8 +1,8 @@
 package com.serial.port.manage
 
 import android.util.Log
-import com.serial.port.manage.data.BaseSerialPortTask
 import com.serial.port.manage.config.SerialPortConfig
+import com.serial.port.manage.data.BaseSerialPortTask
 import com.serial.port.manage.data.WrapSendData
 import com.serial.port.manage.listener.OnDataReceiverListener
 import com.serial.port.manage.listener.OnRetryCall
@@ -30,6 +30,7 @@ class SerialPortManager(
     internal var retryCount = config.retryCount
     internal val helper = SerialPortHelper(this)
     internal val dispatcher = SerialPortDispatcher(config, executor)
+    val isOpenDevice = helper.isOpenDevice
 
     init {
         helper.onRetryCall = object : OnRetryCall {
@@ -37,13 +38,22 @@ class SerialPortManager(
 
             override fun call(task: BaseSerialPortTask) {
                 if (config.debug) {
-                    Log.d(TAG, "Retry opening the serial port for ${retryCount++}ed !")
+                    Log.d(TAG, "Retry opening the serial port for ${retryCount++}ed!")
                 }
                 if (open()) {
                     send(task)
                 }
             }
         }
+    }
+
+    @JvmOverloads
+    fun switchDevice(path: String = config.path, baudRate: Int = config.baudRate): Boolean {
+        check(path != "") { "Path is must important parameters，and it cannot be null!" }
+        check(baudRate >= 0) { "BaudRate is must important parameters，and it cannot be less than 0!" }
+        config.path = path
+        config.baudRate = baudRate
+        return open()
     }
 
     fun open(): Boolean {
