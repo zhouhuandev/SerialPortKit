@@ -8,3 +8,137 @@ plugins {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+file('local.properties').withInputStream { input ->
+    ext.localProps = new Properties().with(true) { it.load(input) }
+}
+
+subprojects {
+    project.afterEvaluate {
+        task artifactSourcesJar(type: Jar) {
+            if (project.hasProperty('android')) {
+                from android.sourceSets.main.java.srcDirs
+                from android.sourceSets.main.kotlin.srcDirs
+            } else {
+                from sourceSets.main.java.srcDirs
+                from sourceSets.main.kotlin.srcDirs
+            }
+            archiveClassifier.set("sources")
+        }
+
+        group 'io.github.zhouhuandev'
+
+        if (project.plugins.hasPlugin('com.android.library')) {
+            project.pluginManager.apply('maven-publish')
+
+            project.ext.propFromConfigOrEnv = { name ->
+                def value = rootProject.ext.localProps.getProperty(name)
+                if (value != null && !value.empty) return value
+                value = project.getProperty(name)
+                if (value != null && !value.empty) return value
+                value = System.getenv(name)
+                return value != null ? value : ""
+            }
+
+            publishing {
+                def mvnConfig = project.extensions.getByName('mvn')
+
+                publications {
+                    maven(MavenPublication) {
+                        artifactId mvnConfig.artifact
+                        groupId mvnConfig.group
+                        version mvnConfig.version
+
+                        artifact project.file("build/outputs/aar/${project.name}-release.aar")
+                        artifact artifactSourcesJar
+
+                        pom {
+                            name = mvnConfig.name
+                            packaging = mvnConfig.packaging
+                            description = mvnConfig.description
+                            url = 'https://github.com/zhouhuandev/SerialPortKit'
+
+                            licenses {
+                                license {
+                                    name = 'The Apache License, Version 2.0'
+                                    url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                                }
+                            }
+                            developers {
+                                developer {
+                                    id = 'zhouhuandev'
+                                    name = 'Zhou Huan'
+                                    email = 'zhouhuandev@gmail.com'
+                                }
+                            }
+                        }
+
+                        pom.withXml {
+                            def root = asNode()
+                            def dependenciesNode = root.appendNode('dependencies')
+                            ext.addDependency = { Dependency dep, String cat ->
+                                if (dep.group == null || dep.version == null || dep.name == null || dep.name == "unspecified") {
+                                    return // invalid dependencies should be ignored
+                                }
+
+                                def dependencyNode = dependenciesNode.appendNode('dependency')
+                                dependencyNode.appendNode('artifactId', dep.name)
+                                dependencyNode.appendNode('groupId', dep.group)
+                                dependencyNode.appendNode('version', dep.version)
+                                if (cat.contains('compile') || cat.contains('implementation')) {
+                                    dependencyNode.appendNode('scope', 'runtime')
+                                }
+                                println("$cat > ${dep.group}:${dep.name}:${dep.version}")
+                                // Some dependencies may have types, such as aar, that should be mentioned in the POM file
+                                def artifactsList = dep.properties['artifacts']
+                                if (artifactsList != null && artifactsList.size() > 0) {
+                                    final artifact = artifactsList[0]
+                                    dependencyNode.appendNode('type', artifact.getType())
+                                }
+
+                                if (!dep.transitive) {
+                                    // In case of non transitive dependency, all its dependencies should be force excluded from them POM file
+                                    final exclusionNode = dependencyNode.appendNode('exclusions').appendNode('exclusion')
+                                    exclusionNode.appendNode('groupId', '*')
+                                    exclusionNode.appendNode('artifactId', '*')
+                                } else if (!dep.properties.excludeRules.empty) {
+                                    // For transitive with exclusions, all exclude rules should be added to the POM file
+                                    final exclusions = dependencyNode.appendNode('exclusions')
+                                    dep.properties.excludeRules.each { ExcludeRule rule ->
+                                        final exclusionNode = exclusions.appendNode('exclusion')
+                                        exclusionNode.appendNode('groupId', rule.group ?: '*')
+                                        exclusionNode.appendNode('artifactId', rule.module ?: '*')
+                                    }
+                                }
+                            }
+                            configurations.all { configuration ->
+                                if (configuration.name in ['compileOnly', 'api', 'implementation', 'runtime']) {
+                                    configuration.dependencies.each { addDependency(it, configuration.name) }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                repositories {
+                    def repoUsername = project.propFromConfigOrEnv('ossrhUsername')
+                    def repoPassword = project.propFromConfigOrEnv('ossrhPassword')
+                    if (repoUsername.isEmpty() || repoPassword.isEmpty()) {
+                        println "Should set properties ossrhUsername and ossrhPassword"
+                    }else {
+                        println "credentials: username[$repoUsername], password[$repoPassword]"
+                    }
+                    maven {
+                        def releasesRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/releases/'
+                        def snapshotsRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+                        url = mvnConfig.version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+                        credentials {
+                            username = repoUsername
+                            password = repoPassword
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
