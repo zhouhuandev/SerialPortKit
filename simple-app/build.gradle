@@ -41,5 +41,8 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
-    implementation(project(":serial-port-kit-manage"))
+    // implementation(project(":serial-port-kit-core"))
+    // implementation(project(":serial-port-kit-manage"))
+    implementation 'io.github.zhouhuandev:core:1.0.0-SNAPSHOT' // require
+    implementation 'io.github.zhouhuandev:manage:1.0.0-SNAPSHOT'
 }
