@@ -118,7 +118,9 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
     fun sendBuffer(task: BaseSerialPortTask): Boolean {
         if (!isOpenDevice) {
             val msg = "Failed to send. You did not open the drive device!"
-            task.onDataReceiverListener().onFailed(task.sendWrapData(), msg)
+            switchThread(task) {
+                it.onDataReceiverListener().onFailed(it.sendWrapData(), msg)
+            }
             if (manager.config.debug) {
                 Log.d(TAG, msg)
             }
@@ -140,11 +142,13 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
                 if (it.retry()) {
                     it.call(task)
                 } else {
-                    task.onDataReceiverListener()
-                        .onFailed(
-                            task.sendWrapData(),
-                            "Failed to send, retried ${manager.retryCount} time."
-                        )
+                    switchThread(task) {
+                        task.onDataReceiverListener()
+                            .onFailed(
+                                task.sendWrapData(),
+                                "Failed to send, retried ${manager.retryCount} time."
+                            )
+                    }
                 }
             }
         } else {
@@ -184,9 +188,11 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
         if (task.receiveCount < manager.config.receiveMaxCount) {
             task.receiveCount++
             task.waitTime = System.currentTimeMillis()
-            task.onDataReceiverListener().onSuccess(data.apply {
-                duration = abs(task.waitTime - task.sendTime)
-            })
+            switchThread(task) {
+                task.onDataReceiverListener().onSuccess(data.apply {
+                    duration = abs(task.waitTime - task.sendTime)
+                })
+            }
             if (task.receiveCount == manager.config.receiveMaxCount) {
                 invalidTasks.add(task)
             }
@@ -204,7 +210,9 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
             if (invalidTasks.isNotEmpty()) invalidTasks.clear()
             tasks.forEach { task ->
                 if (isTimeOut(task)) {
-                    task.onDataReceiverListener().onTimeOut()
+                    switchThread(task) {
+                        task.onDataReceiverListener().onTimeOut()
+                    }
                     invalidTasks.add(task)
                 }
             }
@@ -230,6 +238,19 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
             // 有接收到过数据，但是距离上一个数据已经超时
             val waitOffset = abs(currentTimeMillis - task.waitTime)
             waitOffset > task.sendWrapData().waitOutTime
+        }
+    }
+
+    /**
+     * 切换线程
+     */
+    private fun switchThread(task: BaseSerialPortTask, block: (task: BaseSerialPortTask) -> Unit) {
+        if (task.mainThread()) {
+            manager.dispatcher.runOnUiThread {
+                block.invoke(task)
+            }
+        } else {
+            block.invoke(task)
         }
     }
 }

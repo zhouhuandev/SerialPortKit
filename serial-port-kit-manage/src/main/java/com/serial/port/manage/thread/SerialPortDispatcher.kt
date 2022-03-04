@@ -1,5 +1,7 @@
 package com.serial.port.manage.thread
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.serial.port.manage.config.SerialPortConfig
 import com.serial.port.manage.data.BaseSerialPortTask
@@ -21,6 +23,8 @@ internal class SerialPortDispatcher(
         private const val TAG = "SerialPortDispatcher"
     }
 
+    private val mMainLooperHandler = Handler(Looper.getMainLooper())
+
     private val mExecutor = config.executor ?: ScheduledThreadPoolExecutor(
         max(
             8,
@@ -33,8 +37,10 @@ internal class SerialPortDispatcher(
         onCompleted: ((task: BaseSerialPortTask) -> Unit)? = null
     ) {
         if (task.mainThread()) {
-            execute(task)
-            onCompleted?.invoke(task)
+            runOnUiThread {
+                execute(task)
+                onCompleted?.invoke(task)
+            }
         } else {
             mExecutor.execute {
                 execute(task)
@@ -53,6 +59,15 @@ internal class SerialPortDispatcher(
         return mExecutor.submit(runnable)
     }
 
+    /**
+     * 切换到主线程
+     *
+     * @param runnable Runnable
+     */
+    fun runOnUiThread(runnable: Runnable) {
+        mMainLooperHandler.post(runnable)
+    }
+
     private fun execute(task: BaseSerialPortTask) {
         task.onTaskStart()
         task.run()
@@ -66,6 +81,7 @@ internal class SerialPortDispatcher(
             }
             mExecutor.shutdown()
         }
+        mMainLooperHandler.removeCallbacksAndMessages(null)
     }
 
 }
