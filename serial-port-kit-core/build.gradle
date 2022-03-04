@@ -3,6 +3,15 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+apply from: '../gradle/publish/publish_config.gradle'
+
+mvn {
+    name 'SerialPortKit Core'
+    description 'SerialPortKit Core'
+    artifact 'serial-port-kit-core'
+    version getArtifactVersion()
+}
+
 android {
     compileSdk libs.versions.compileSdk.get().toInteger()
 
@@ -42,4 +51,7 @@ android {
 
 dependencies {
     implementation(libs.core.ktx)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
 }
