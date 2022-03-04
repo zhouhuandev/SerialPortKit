@@ -28,6 +28,28 @@
 
 ## 使用方法
 
+### 接入方式
+
+在Project `build.gradle`中添加
+
+```kotlin
+repositories {
+    google()
+    mavenCentral()
+    maven {
+        name 'maven-snapshot'
+        url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+    }
+}
+```
+
+在 app  `build.gradle`中添加
+
+```kotlin
+implementation 'io.github.zhouhuandev:core:1.0.0-SNAPSHOT' // require
+implementation 'io.github.zhouhuandev:manage:1.0.0-SNAPSHOT'
+```
+
 ### 初始化
 
 老规矩，仍然是在Application中初始化。
