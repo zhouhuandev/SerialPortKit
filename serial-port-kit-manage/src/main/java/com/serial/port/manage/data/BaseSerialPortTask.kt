@@ -14,6 +14,7 @@ abstract class BaseSerialPortTask : SerialPortTask {
 
     var sendTime = 0L
     var waitTime = 0L
+    var receiveCount = 0
     var isSendSuccess = true
     private var outputStream: OutputStream? = null
 

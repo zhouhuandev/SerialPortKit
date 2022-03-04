@@ -9,7 +9,6 @@ import com.serial.port.manage.listener.OnRetryCall
 import com.serial.port.manage.model.SimpleSerialPortTask
 import com.serial.port.manage.thread.SerialPortDispatcher
 import com.serial.port.manage.utils.ToastUtil
-import java.util.concurrent.ExecutorService
 
 /**
  * 串口包装管理
@@ -19,7 +18,6 @@ import java.util.concurrent.ExecutorService
  */
 class SerialPortManager(
     val config: SerialPortConfig,
-    private val executor: ExecutorService?
 ) {
 
     companion object {
@@ -29,7 +27,7 @@ class SerialPortManager(
 
     internal var retryCount = config.retryCount
     internal val helper = SerialPortHelper(this)
-    internal val dispatcher = SerialPortDispatcher(config, executor)
+    internal val dispatcher = SerialPortDispatcher(config)
     val isOpenDevice = helper.isOpenDevice
 
     init {
@@ -79,8 +77,8 @@ class SerialPortManager(
         return isSuccess
     }
 
-    fun close() {
-        helper.closeDevice()
+    fun close(): Boolean {
+        return helper.closeDevice()
     }
 
     fun send(wrapSendData: WrapSendData, onDataReceiverListener: OnDataReceiverListener) {

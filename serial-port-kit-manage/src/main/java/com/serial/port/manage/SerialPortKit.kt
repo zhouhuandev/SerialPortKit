@@ -3,6 +3,7 @@ package com.serial.port.manage
 import android.app.Application
 import com.serial.port.manage.config.SerialPortConfig
 import com.serial.port.manage.config.SerialPortEnv
+import com.serial.port.manage.listener.OnAddressCheckCall
 import com.serial.port.manage.listener.OnDataCheckCall
 import com.serial.port.manage.utils.ToastUtil
 import java.util.concurrent.ExecutorService
@@ -34,9 +35,11 @@ class SerialPortKit private constructor(builder: Builder) {
         internal var baudRate: Int = 115200
         internal var maxSize: Int = 64
         internal var retryCount = 0
+        internal var receiveMaxCount = 1
         internal var isReceiveMaxSize: Boolean = false
         internal var isCustom: Boolean = false
         internal var dataCheckCall: OnDataCheckCall? = null
+        internal var addressCheckCall: OnAddressCheckCall? = null
         internal var debug = false
         internal var isShowToast = false
 
@@ -48,6 +51,9 @@ class SerialPortKit private constructor(builder: Builder) {
 
         fun retryCount(retryCount: Int): Builder = apply { this.retryCount = retryCount }
 
+        fun receiveMaxCount(receiveMaxCount: Int): Builder =
+            apply { this.receiveMaxCount = receiveMaxCount }
+
         fun isReceiveMaxSize(isReceiveMaxSize: Boolean): Builder =
             apply { this.isReceiveMaxSize = isReceiveMaxSize }
 
@@ -55,6 +61,9 @@ class SerialPortKit private constructor(builder: Builder) {
             this.isCustom = isCustom
             this.dataCheckCall = dataCheckCall
         }
+
+        fun addressCheckCall(addressCheckCall: OnAddressCheckCall): Builder =
+            apply { this.addressCheckCall = addressCheckCall }
 
         fun setExecutor(executor: ExecutorService): Builder = apply { this.mExecutor = executor }
 
@@ -68,9 +77,10 @@ class SerialPortKit private constructor(builder: Builder) {
         }
 
         private fun checkParams() {
-            check(path != "") { "Path is must important parameters，and it cannot be null !" }
-            check(baudRate >= 0) { "BaudRate is must important parameters，and it cannot be less than 0 !" }
-            check(retryCount in 1..SerialPortManager.MAX_RETRY_COUNT) { "The retryCount is $retryCount, The number of retries should be between 0 and 3 !" }
+            check(path != "") { "Path is must important parameters，and it cannot be null!" }
+            check(baudRate >= 0) { "The baudRate is $baudRate, BaudRate is must important parameters，and it cannot be less than 0!" }
+            check(retryCount in 1..SerialPortManager.MAX_RETRY_COUNT) { "The retryCount is $retryCount, The number of retries should be between 0 and 3!" }
+            check(receiveMaxCount > 0) { "The retryCount is $receiveMaxCount, At least one Count!" }
             if (isCustom) {
                 checkNotNull(dataCheckCall) { "isCustom is ture, dataCheckCall is not null !" }
             }
@@ -83,12 +93,15 @@ class SerialPortKit private constructor(builder: Builder) {
             baudRate = builder.baudRate,
             maxSize = builder.maxSize,
             retryCount = builder.retryCount,
+            receiveMaxCount = builder.receiveMaxCount,
             isReceiveMaxSize = builder.isReceiveMaxSize,
             isCustom = builder.isCustom,
             dataCheckCall = builder.dataCheckCall,
+            addressCheckCall = builder.addressCheckCall,
             debug = builder.debug,
-            isShowToast = builder.isShowToast
-        ), builder.mExecutor
+            isShowToast = builder.isShowToast,
+            executor = builder.mExecutor,
+        )
     )
 
     init {

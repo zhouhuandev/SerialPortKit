@@ -72,26 +72,33 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
     /**
      * 关闭串口
      */
-    fun closeDevice() {
+    fun closeDevice(): Boolean {
+        var isCloseSuccess = false
         if (isOpenDevice) {
             isOpenDevice = false
             mSerialPort?.close()
             val isSuccess = serialReadThread?.stopReadDataThread() ?: false
             if (isSuccess) {
+                serialReadThread = null
                 try {
-                    serialReadThread = null
                     mSerialPort?.inputStream?.close()
+                } catch (e: IOException) {
+                    Log.e(TAG, "Failed to close serial data inputStream.", e)
+                }
+                try {
                     mSerialPort?.outputStream?.close()
                 } catch (e: IOException) {
-                    Log.e(TAG, "Failed to close serial data stream.", e)
+                    Log.e(TAG, "Failed to close serial data outputStream.", e)
                 }
             }
             mSerialPort = null
+            isCloseSuccess = true
         } else {
             if (manager.config.debug) {
                 Log.d(TAG, "The serial port has not been opened, no need to close it.")
             }
         }
+        return isCloseSuccess
     }
 
     /**
@@ -110,8 +117,10 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
      */
     fun sendBuffer(task: BaseSerialPortTask): Boolean {
         if (!isOpenDevice) {
+            val msg = "Failed to send. You did not open the drive device!"
+            task.onDataReceiverListener().onFailed(task.sendWrapData(), msg)
             if (manager.config.debug) {
-                Log.d(TAG, "You did not open the drive device!")
+                Log.d(TAG, msg)
             }
             return false
         }
@@ -154,14 +163,35 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
     fun sendMessage(data: WrapReceiverData) {
         readLock.lock()
         try {
+            if (invalidTasks.isNotEmpty()) invalidTasks.clear()
             tasks.forEach { task ->
-                task.waitTime = System.currentTimeMillis()
-                task.onDataReceiverListener().onSuccess(data.apply {
-                    duration = abs(task.waitTime - task.sendTime)
-                })
+                manager.config.addressCheckCall?.let {
+                    if (it.checkAddress(task.sendWrapData(), data)) {
+                        onSuccess(task, data)
+                    }
+                } ?: onSuccess(task, data)
+            }
+            // 移除无效任务
+            invalidTasks.forEach { task ->
+                tasks.remove(task)
             }
         } finally {
             readLock.unlock()
+        }
+    }
+
+    private fun onSuccess(task: BaseSerialPortTask, data: WrapReceiverData) {
+        if (task.receiveCount < manager.config.receiveMaxCount) {
+            task.receiveCount++
+            task.waitTime = System.currentTimeMillis()
+            task.onDataReceiverListener().onSuccess(data.apply {
+                duration = abs(task.waitTime - task.sendTime)
+            })
+            if (task.receiveCount == manager.config.receiveMaxCount) {
+                invalidTasks.add(task)
+            }
+        } else {
+            invalidTasks.add(task)
         }
     }
 

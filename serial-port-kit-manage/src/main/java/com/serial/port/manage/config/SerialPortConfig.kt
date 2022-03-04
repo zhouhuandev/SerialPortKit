@@ -1,6 +1,8 @@
 package com.serial.port.manage.config
 
+import com.serial.port.manage.listener.OnAddressCheckCall
 import com.serial.port.manage.listener.OnDataCheckCall
+import java.util.concurrent.ExecutorService
 
 /**
  * 串口配置信息
@@ -27,7 +29,12 @@ data class SerialPortConfig(
     /**
      * 重试次数
      */
-    val retryCount: Int,
+    val retryCount: Int = 0,
+
+    /**
+     * 最大接收次数
+     */
+    val receiveMaxCount: Int = 1,
 
     /**
      * 是否按最大接收长度进行返回（注：当前需求不需要按照数据的最大长度进行返回）
@@ -40,12 +47,29 @@ data class SerialPortConfig(
      * 注：如果自定义协议，[SerialPortConfig.isReceiveMaxSize] 则必须为 false
      */
     val isCustom: Boolean = false,
+
     /**
      * 自定义数据校验
      */
     val dataCheckCall: OnDataCheckCall?,
 
+    /**
+     * 地址指令校验
+     */
+    val addressCheckCall: OnAddressCheckCall?,
+
+    /**
+     * Debug模式输出日志
+     */
     val debug: Boolean = false,
 
+    /**
+     * 是否显示 Toast
+     */
     val isShowToast: Boolean = false,
+
+    /**
+     * 线程池
+     */
+    val executor: ExecutorService?
 )

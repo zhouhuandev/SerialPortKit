@@ -3,7 +3,6 @@ package com.serial.port.manage.thread
 import android.util.Log
 import com.serial.port.manage.config.SerialPortConfig
 import com.serial.port.manage.data.BaseSerialPortTask
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import kotlin.math.max
@@ -16,14 +15,13 @@ import kotlin.math.max
  */
 internal class SerialPortDispatcher(
     private val config: SerialPortConfig,
-    private val executor: ExecutorService? = null
 ) {
 
     companion object {
         private const val TAG = "SerialPortDispatcher"
     }
 
-    private val mExecutor = executor ?: ScheduledThreadPoolExecutor(
+    private val mExecutor = config.executor ?: ScheduledThreadPoolExecutor(
         max(
             8,
             Runtime.getRuntime().availableProcessors() * 2
@@ -62,7 +60,7 @@ internal class SerialPortDispatcher(
     }
 
     fun dispatcherEnd() {
-        if (executor != mExecutor) {
+        if (config.executor != mExecutor) {
             if (config.debug) {
                 Log.i(TAG, "auto shutdown default executor")
             }
