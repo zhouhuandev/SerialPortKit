@@ -47,6 +47,7 @@ repositories {
 
 ```kotlin
 implementation 'io.github.zhouhuandev:core:1.0.0-SNAPSHOT' // require
+
 implementation 'io.github.zhouhuandev:manage:1.0.0-SNAPSHOT'
 ```
 
