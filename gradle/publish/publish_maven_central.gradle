@@ -1,0 +1,137 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+task androidSourcesJar(type: Jar) {
+    archiveClassifier.set('sources')
+    if (project.plugins.findPlugin("com.android.library")) {
+        from android.sourceSets.main.java.srcDirs
+        from android.sourceSets.main.kotlin.srcDirs
+    } else {
+        from sourceSets.main.java.srcDirs
+        from sourceSets.main.kotlin.srcDirs
+    }
+}
+
+ext["signing.keyId"] = ''
+ext["signing.password"] = ''
+ext["signing.secretKeyRingFile"] = ''
+ext["ossrhUsername"] = ''
+ext["ossrhPassword"] = ''
+
+File secretPropsFile = project.rootProject.file('local.properties')
+if (secretPropsFile.exists()) {
+    println "Found secret props file, loading props"
+    Properties p = new Properties()
+    p.load(new FileInputStream(secretPropsFile))
+    p.each { name, value ->
+        println "name: $name value:$value"
+        ext[name] = value
+    }
+    println "Found secret props file, loading props"
+} else {
+    throw NullPointerException("no local.properties exists")
+}
+
+def repoUsername = ext['ossrhUsername']
+def repoPassword = ext['ossrhPassword']
+
+project.afterEvaluate {
+    def mvnConfig = extensions.getByName('mvn')
+
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                artifactId mvnConfig.artifact
+                groupId mvnConfig.group
+                version mvnConfig.version
+
+                artifact bundleReleaseAar
+                artifact androidSourcesJar
+
+                pom {
+                    name = mvnConfig.name
+                    packaging = mvnConfig.packaging
+                    description = mvnConfig.description
+                    url = 'https://github.com/zhouhuandev/SerialPortKit'
+
+                    licenses {
+                        license {
+                            name = 'The Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'zhouhuandev'
+                            name = 'Zhou Huan'
+                            email = 'zhouhuandev@gmail.com'
+                        }
+                    }
+                }
+
+                pom.withXml {
+                    def dependenciesNode = asNode().appendNode('dependencies')
+                    ext.addDependency = { Dependency dep, String scope ->
+                        if (dep.group == null || dep.version == null || dep.name == null || dep.name == "unspecified") {
+                            return // invalid dependencies should be ignored
+                        }
+
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('artifactId', dep.name)
+                        dependencyNode.appendNode('groupId', dep.group)
+                        dependencyNode.appendNode('version', dep.version)
+                        System.println("${dep.group} ${dep.name} ${dep.version}")
+                        if (!scope.isEmpty()) {
+                            dependencyNode.appendNode('scope', scope)
+                        }
+                        // Some dependencies may have types, such as aar, that should be mentioned in the POM file
+                        def artifactsList = dep.properties['artifacts']
+                        if (artifactsList != null && artifactsList.size() > 0) {
+                            final artifact = artifactsList[0]
+                            dependencyNode.appendNode('type', artifact.getType())
+                        }
+
+                        if (!dep.transitive) {
+                            // In case of non transitive dependency, all its dependencies should be force excluded from them POM file
+                            final exclusionNode = dependencyNode.appendNode('exclusions').appendNode('exclusion')
+                            exclusionNode.appendNode('groupId', '*')
+                            exclusionNode.appendNode('artifactId', '*')
+                        } else if (!dep.properties.excludeRules.empty) {
+                            // For transitive with exclusions, all exclude rules should be added to the POM file
+                            final exclusions = dependencyNode.appendNode('exclusions')
+                            dep.properties.excludeRules.each { ExcludeRule rule ->
+                                final exclusionNode = exclusions.appendNode('exclusion')
+                                exclusionNode.appendNode('groupId', rule.group ?: '*')
+                                exclusionNode.appendNode('artifactId', rule.module ?: '*')
+                            }
+                        }
+                    }
+                    configurations.compileOnly.getAllDependencies().each { addDependency(it, '') }
+                    configurations.api.getAllDependencies().each { addDependency(it, '') }
+                    configurations.implementation.getAllDependencies().each { addDependency(it, 'runtime') }
+                    configurations.runtimeOnly.getAllDependencies().each { addDependency(it, 'runtime') }
+                }
+            }
+        }
+
+        repositories {
+            if (repoUsername.isEmpty() || repoPassword.isEmpty()) {
+                println "Should set properties ossrhUsername and ossrhPassword"
+            } else {
+                println "credentials: username[$repoUsername], password[$repoPassword]"
+            }
+            maven {
+                def releasesRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/releases/'
+                def snapshotsRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+                url = mvnConfig.version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+                credentials {
+                    username = repoUsername
+                    password = repoPassword
+                }
+            }
+        }
+    }
+}
+signing {
+    sign publishing.publications
+}
