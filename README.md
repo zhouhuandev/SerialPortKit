@@ -170,17 +170,19 @@ Android与下位机通讯，没有固定的通讯协议，都是根据各自项�
 
 ```kotlin
 if (MyApp.portManager?.isOpenDevice == false) {
-    MyApp.portManager?.open()
+    val open = MyApp.portManager?.open() ?: false
+    Log.d(TAG, "串口打开${if (open) "成功" else "失败"}")
 }
 ```
 
 ### 关闭串口
 
 ```kotlin
-MyApp.portManager?.close()
+val close = MyApp.portManager?.close() ?: false
+Log.d(TAG, "串口关闭${if (close) "成功" else "失败"}")
 ```
 
-### 发送数据
+### WrapSendData 发送数据
 
 ```kotlin
 MyApp.portManager?.send(WrapSendData(byteArrayOf(0xAA.toByte(),0xA1.toByte(),0x00.toByte(), 0xB5.toByte())),
@@ -199,16 +201,69 @@ MyApp.portManager?.send(WrapSendData(byteArrayOf(0xAA.toByte(),0xA1.toByte(),0x0
     })
 ```
 
+### 自定义Task 发送数据
+
+每条指令的发送，在底层是以每个单独的Task执行发送，互不干扰。自定义Task继承父类 BaseSerialPortTask,同时可监控发送任务开始前做相应的操作，也可以监控发送任务完成后作相应的任务操作，于此同时，可以切换当前发送任务以及最终的 OnDataReceiverListener 监听回调是否执行在主线程。默认是在子线程中执行及回调。
+
+自定义Task
+```kotlin
+class SimpleSerialPortTask(
+    private val wrapSendData: WrapSendData,
+    private val onDataReceiverListener: OnDataReceiverListener
+) : BaseSerialPortTask() {
+    override fun sendWrapData(): WrapSendData = wrapSendData
+
+    override fun onDataReceiverListener(): OnDataReceiverListener = onDataReceiverListener
+
+    override fun onTaskStart() {
+
+    }
+
+    override fun onTaskCompleted() {
+
+    }
+
+    override fun mainThread(): Boolean {
+        return super.mainThread()
+    }
+}
+
+
+```
+
+发送Task
+
+```kotlin
+MyApp.portManager?.send(SimpleSerialPortTask(WrapSendData(SenderManager.getSender().sendStartDetect()), object : OnDataReceiverListener {
+    override fun onSuccess(data: WrapReceiverData) {
+        Log.d(TAG, "响应数据：${TypeConversion.bytes2HexString(data.data)}")
+    }
+
+    override fun onFailed(wrapSendData: WrapSendData, msg: String) {
+        Log.e(
+            TAG,
+            "发送数据: ${TypeConversion.bytes2HexString(wrapSendData.sendData)}, $msg"
+        )
+    }
+
+    override fun onTimeOut() {
+        Log.e(TAG, "发送或者接收超时")
+    }
+}))
+```
+
 ### 切换串口
 
 ```
-MyApp.portManager?.switchDevice(path = "/dev/ttyS1")
+val switchDevice = MyApp.portManager?.switchDevice(path = "/dev/ttyS1") ?: false
+Log.d(TAG, "串口切换${if (switchDevice) "成功" else "失败"}")
 ```
 
 ### 切换波特率
 
 ```
-MyApp.portManager?.switchDevice(baudRate = 9600)
+val switchDevice = MyApp.portManager?.switchDevice(baudRate = 9600) ?: false
+Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
 ```
 
 注：支持串口与波特率可以同时进行切换
