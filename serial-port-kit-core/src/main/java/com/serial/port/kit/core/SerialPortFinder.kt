@@ -6,6 +6,12 @@ import java.io.FileReader
 import java.io.LineNumberReader
 import java.util.*
 
+/**
+ * 搜索串口工具
+ *
+ * @author zhouhuan
+ * @time 2022/3/5
+ */
 class SerialPortFinder {
     inner class Driver(val name: String, private val mDeviceRoot: String) {
         var mDevices: Vector<File>? = null

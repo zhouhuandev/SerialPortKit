@@ -2,6 +2,12 @@ package com.serial.port.kit.core.common
 
 import java.util.*
 
+/**
+ * Byte数组工具
+ *
+ * @author zhouhuan
+ * @time 2022/3/5
+ */
 object TypeConversion {
 
     /**
