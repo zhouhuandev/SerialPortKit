@@ -8,7 +8,7 @@ import com.serial.port.manage.SerialPortManager
  * @author zhouhuan
  * @time 2021/10/26
  */
-class DataProcess(val manager: SerialPortManager) {
+internal class DataProcess(val manager: SerialPortManager) {
     /**
      * 是否按照自定义协议读取数据信息
      */

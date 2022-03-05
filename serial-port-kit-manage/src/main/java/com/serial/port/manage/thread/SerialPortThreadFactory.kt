@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * @author zhouhuan
  * @time 2022/3/2
  */
-class SerialPortThreadFactory(
+internal class SerialPortThreadFactory(
     private val config: SerialPortConfig,
     private val name: String,
     private val daemon: Boolean

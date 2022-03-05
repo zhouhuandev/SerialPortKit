@@ -11,7 +11,7 @@ import java.io.IOException
  * @author zhouhuan
  * @time 2021/10/26
  */
-class SerialReadThread(
+internal class SerialReadThread(
     private val mSerialPort: SerialPort,
     private val dataProcess: DataProcess
 ) : Thread() {

@@ -6,7 +6,7 @@ package com.serial.port.manage.data
  * @author zhouhuan
  * @time 2022/3/2
  */
-interface SerialPortTask {
+internal interface SerialPortTask {
 
     fun onTaskStart()
 
