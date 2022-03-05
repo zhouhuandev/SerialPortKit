@@ -46,9 +46,9 @@ repositories {
 在 app  `build.gradle`中添加
 
 ```kotlin
-implementation 'io.github.zhouhuandev:serial-port-kit-core:1.0.0-SNAPSHOT' // require
+implementation 'io.github.zhouhuandev:serial-port-kit-core:1.0.1-SNAPSHOT' // require
 
-implementation 'io.github.zhouhuandev:serial-port-kit-manage:1.0.0-SNAPSHOT'
+implementation 'io.github.zhouhuandev:serial-port-kit-manage:1.0.1-SNAPSHOT'
 ```
 
 ### 初始化
