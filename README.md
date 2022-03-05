@@ -367,7 +367,7 @@ Blog : "https://blog.csdn.net/youxun1312"
 
 ## License
 
-```kotlin
+```shell
 Copyright (C)  zhouhuan, SerialPortKit Framework Open Source Project
 
 Licensed under the Apache License, Version 2.0 (the "License")
