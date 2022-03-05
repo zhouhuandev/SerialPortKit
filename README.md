@@ -256,7 +256,7 @@ class SimpleSerialPortTask(
     }
 
     override fun mainThread(): Boolean {
-        return super.mainThread()
+        return false
     }
 }
 
@@ -286,14 +286,14 @@ MyApp.portManager?.send(SimpleSerialPortTask(WrapSendData(SenderManager.getSende
 
 ### 切换串口
 
-```
+```kotlin
 val switchDevice = MyApp.portManager?.switchDevice(path = "/dev/ttyS1") ?: false
 Log.d(TAG, "串口切换${if (switchDevice) "成功" else "失败"}")
 ```
 
 ### 切换波特率
 
-```
+```kotlin
 val switchDevice = MyApp.portManager?.switchDevice(baudRate = 9600) ?: false
 Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
 ```
@@ -302,23 +302,23 @@ Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
 
 ### 命令管理池
 
-```
+```kotlin
 object SerialCommandProtocol : BaseProtocol() {
-
+    // TODO: Something
 }
 ```
 
 ### 发送指令实现
 
-```
+```kotlin
 class AdapterSender : Sender {
-
+    // TODO: Something
 }
 ```
 
 ### 命令池版本管理发送器
 
-```
+```kotlin
 object SenderManager {
     private var senderMap = hashMapOf<Int, Sender>()
 
@@ -356,7 +356,7 @@ object SenderManager {
 
 ## 关于作者
 
-```
+```shell
 Name : "zhouhuandev",
 Blog : "https://blog.csdn.net/youxun1312"
 ```
@@ -367,10 +367,10 @@ Blog : "https://blog.csdn.net/youxun1312"
 
 ## License
 
-```
+```kotlin
 Copyright (C)  zhouhuan, SerialPortKit Framework Open Source Project
 
-Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License")
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
