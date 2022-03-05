@@ -6,7 +6,8 @@ package com.serial.port.manage.data
  * @author zhouhuan
  * @time 2022/3/2
  */
-data class WrapReceiverData(
+data class WrapReceiverData
+@JvmOverloads constructor(
     var data: ByteArray,
     var size: Int,
     var duration: Long = 0L,
