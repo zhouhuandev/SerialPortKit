@@ -28,12 +28,14 @@ class MainActivity : AppCompatActivity() {
         // 打开串口
         button.setOnClickListener {
             if (MyApp.portManager?.isOpenDevice == false) {
-                MyApp.portManager?.open()
+                val open = MyApp.portManager?.open() ?: false
+                Log.d(TAG, "串口打开${if (open) "成功" else "失败"}")
             }
         }
         // 关闭串口
         button2.setOnClickListener {
-            MyApp.portManager?.close()
+            val close = MyApp.portManager?.close() ?: false
+            Log.d(TAG, "串口关闭${if (close) "成功" else "失败"}")
         }
         // 发送数据
         button3.setOnClickListener {
@@ -57,11 +59,14 @@ class MainActivity : AppCompatActivity() {
         }
         // 切换串口
         button4.setOnClickListener {
-            MyApp.portManager?.switchDevice(path = "/dev/ttyS1")
+            val switchDevice = MyApp.portManager?.switchDevice(path = "/dev/ttyS1") ?: false
+            Log.d(TAG, "串口切换${if (switchDevice) "成功" else "失败"}")
         }
         // 切换波特率
         button5.setOnClickListener {
-            MyApp.portManager?.switchDevice(baudRate = 9600)
+            val switchDevice = MyApp.portManager?.switchDevice(baudRate = 9600) ?: false
+            Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
+
         }
     }
 
