@@ -32,6 +32,7 @@ subprojects {
             project.pluginManager.apply('maven-publish')
 
             project.ext.propFromConfigOrEnv = { name ->
+                // 如遇报错，请在 local.properties 添加 ossrhUsername="" ossrhPassword=""
                 def value = rootProject.ext.localProps.getProperty(name)
                 if (value != null && !value.empty) return value
                 value = project.getProperty(name)
