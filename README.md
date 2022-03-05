@@ -35,8 +35,6 @@
 
 ```kotlin
 repositories {
-    google()
-    mavenCentral()
     maven {
         name 'maven-snapshot'
         url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
