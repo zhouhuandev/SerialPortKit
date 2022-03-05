@@ -44,7 +44,7 @@ object TypeConversion {
      */
     fun byte2hex(b: ByteArray): String {
         val sb = StringBuffer()
-        var tmp = ""
+        var tmp: String?
         for (i in b.indices) {
             tmp = Integer.toHexString(b[i].toInt() and 0XFF)
             if (tmp.length == 1) {
