@@ -31,7 +31,7 @@
 
 ### 接入方式
 
-在Project `build.gradle`中添加
+在 Project `build.gradle`中添加
 
 ```kotlin
 repositories {
@@ -42,12 +42,28 @@ repositories {
 }
 ```
 
-在 app  `build.gradle`中添加
+在 app `build.gradle`中添加
 
 ```kotlin
-implementation 'io.github.zhouhuandev:serial-port-kit-core:1.0.1-SNAPSHOT' // require
+implementation 'io.github.zhouhuandev:serial-port-kit-manage:1.0.1-SNAPSHOT' // require kotlin 1.7.0
+// 需要使用数据转换工具或串口搜索或完全自定义数据输入输出的开发者可使用 serial-port-kit-core
+implementation 'io.github.zhouhuandev:serial-port-kit-core:1.0.1-SNAPSHOT' // 可选
+```
 
-implementation 'io.github.zhouhuandev:serial-port-kit-manage:1.0.1-SNAPSHOT'
+如果在 build 过程中爆错 `resource android:attr/lStar not found.`
+
+```shell
+.gradle/caches/transforms-2/files-2.1/3c80c501edca1d8bdce41f94be0c4104/core-1.7.0/res/values/values.xml:105:5-114:25: AAPT: error: resource android:attr/lStar not found.
+```
+
+是因为您当前项目的Kotlin版本低于1.7.0导致，需要强制替换统一版本
+
+```groovy
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.core:core-ktx:1.6.0'
+    }
+}
 ```
 
 ### 初始化
