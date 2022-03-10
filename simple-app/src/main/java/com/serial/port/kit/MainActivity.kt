@@ -8,6 +8,7 @@ import com.serial.port.kit.core.common.TypeConversion
 import com.serial.port.kit.sender.SenderManager
 import com.serial.port.manage.data.WrapReceiverData
 import com.serial.port.manage.data.WrapSendData
+import com.serial.port.manage.listener.OnDataPickListener
 import com.serial.port.manage.listener.OnDataReceiverListener
 
 class MainActivity : AppCompatActivity() {
@@ -67,6 +68,24 @@ class MainActivity : AppCompatActivity() {
             val switchDevice = MyApp.portManager?.switchDevice(baudRate = 9600) ?: false
             Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
 
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 增加统一监听回调
+        MyApp.portManager?.addDataPickListener(onDataPickListener)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // 移除统一监听回调
+        MyApp.portManager?.removeDataPickListener(onDataPickListener)
+    }
+
+    private val onDataPickListener: OnDataPickListener = object : OnDataPickListener {
+        override fun onSuccess(data: WrapReceiverData) {
+            Log.d(TAG, "统一响应数据：${TypeConversion.bytes2HexString(data.data)}")
         }
     }
 
