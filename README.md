@@ -46,9 +46,9 @@ repositories {
 在 app `build.gradle`中添加
 
 ```kotlin
-implementation 'io.github.zhouhuandev:serial-port-kit-manage:1.0.1-SNAPSHOT' // require kotlin 1.7.0
+implementation 'io.github.zhouhuandev:serial-port-kit-manage:1.0.2-SNAPSHOT' // require kotlin 1.7.0
 // 需要使用数据转换工具或串口搜索或完全自定义数据输入输出的开发者可使用 serial-port-kit-core
-implementation 'io.github.zhouhuandev:serial-port-kit-core:1.0.1-SNAPSHOT' // 可选
+implementation 'io.github.zhouhuandev:serial-port-kit-core:1.0.2-SNAPSHOT' // 可选
 ```
 
 如果在 build 过程中爆错 `resource android:attr/lStar not found.`
