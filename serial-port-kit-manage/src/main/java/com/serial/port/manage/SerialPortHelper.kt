@@ -5,11 +5,14 @@ import com.serial.port.kit.core.SerialPort
 import com.serial.port.manage.data.BaseSerialPortTask
 import com.serial.port.manage.data.DataProcess
 import com.serial.port.manage.data.SerialPortTask
-import com.serial.port.manage.thread.SerialReadThread
 import com.serial.port.manage.data.WrapReceiverData
+import com.serial.port.manage.listener.OnDataPickListener
 import com.serial.port.manage.listener.OnRetryCall
+import com.serial.port.manage.thread.SerialReadThread
+import com.serial.port.manage.utils.contains
 import java.io.File
 import java.io.IOException
+import java.lang.ref.WeakReference
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.math.abs
@@ -43,8 +46,10 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
     private var serialReadThread: SerialReadThread? = null
     private val readWriteLock = ReentrantReadWriteLock()
     private val readLock: Lock = readWriteLock.readLock()
+    private val writeLock: Lock = readWriteLock.writeLock()
     private val tasks: MutableList<BaseSerialPortTask> = ArrayList()
     private val invalidTasks: MutableList<SerialPortTask> = ArrayList()
+    private val onDataPickListeners: MutableList<WeakReference<OnDataPickListener>> = arrayListOf()
 
     /**
      * 打开串口
@@ -167,24 +172,53 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
     fun sendMessage(data: WrapReceiverData) {
         readLock.lock()
         try {
+            // 检测 WrapReceiverData 是否为 Task 匹配指令数据，否则进行全局统一回调
+            var isTask = false
             if (invalidTasks.isNotEmpty()) invalidTasks.clear()
             tasks.forEach { task ->
-                manager.config.addressCheckCall?.let {
-                    if (it.checkAddress(task.sendWrapData(), data)) {
-                        onSuccess(task, data)
+                manager.config.addressCheckCall?.apply {
+                    if (checkAddress(task.sendWrapData(), data)) {
+                        onSuccess(task, data) {
+                            isTask = it
+                        }
                     }
-                } ?: onSuccess(task, data)
+                } ?: onSuccess(task, data) {
+                    isTask = it
+                }
             }
             // 移除无效任务
             invalidTasks.forEach { task ->
                 tasks.remove(task)
+            }
+            // 收到串口端数据是否需要与 Task 成对数据进行隔离，先决条件为：检测是否 Task 是否已经进行回调，否则进行统一回调
+            if (!isTask) {
+                sendMessageAllDataPickListener(data)
             }
         } finally {
             readLock.unlock()
         }
     }
 
-    private fun onSuccess(task: BaseSerialPortTask, data: WrapReceiverData) {
+    /**
+     * 发送所有的监听
+     */
+    private fun sendMessageAllDataPickListener(data: WrapReceiverData) {
+        val iterator = onDataPickListeners.iterator()
+        while (iterator.hasNext()) {
+            val reference = iterator.next()
+            if (reference.get() == null) {
+                iterator.remove()
+                continue
+            }
+            reference.get()!!.onSuccess(data)
+        }
+    }
+
+    private fun onSuccess(
+        task: BaseSerialPortTask,
+        data: WrapReceiverData,
+        block: ((Boolean) -> Unit)
+    ) {
         if (task.receiveCount < manager.config.receiveMaxCount) {
             task.receiveCount++
             task.waitTime = System.currentTimeMillis()
@@ -199,6 +233,8 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
         } else {
             invalidTasks.add(task)
         }
+        // 接收次数小于最大次数，则代表一定进行回调
+        block.invoke(task.receiveCount < manager.config.receiveMaxCount)
     }
 
     /**
@@ -253,4 +289,38 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
             block.invoke(task)
         }
     }
+
+    /**
+     * 增加统一监听回调
+     */
+    fun addDataPickListener(listener: OnDataPickListener) {
+        writeLock.lock()
+        try {
+            if (!onDataPickListeners.contains(listener)) {
+                onDataPickListeners.add(WeakReference(listener))
+                if (manager.config.debug) {
+                    Log.d(TAG, "$listener add monitor successfully")
+                }
+            }
+        } finally {
+            writeLock.unlock()
+        }
+    }
+
+    /**
+     * 移除统一监听回调
+     */
+    fun removeDataPickListener(listener: OnDataPickListener) {
+        writeLock.lock()
+        try {
+            onDataPickListeners.contains(listener, true) {
+                if (it && manager.config.debug) {
+                    Log.d(TAG, "$listener remove monitor successfully")
+                }
+            }
+        } finally {
+            writeLock.unlock()
+        }
+    }
+
 }

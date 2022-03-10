@@ -4,6 +4,7 @@ import android.util.Log
 import com.serial.port.manage.config.SerialPortConfig
 import com.serial.port.manage.data.BaseSerialPortTask
 import com.serial.port.manage.data.WrapSendData
+import com.serial.port.manage.listener.OnDataPickListener
 import com.serial.port.manage.listener.OnDataReceiverListener
 import com.serial.port.manage.listener.OnRetryCall
 import com.serial.port.manage.model.SimpleSerialPortTask
@@ -87,5 +88,13 @@ class SerialPortManager(
 
     fun send(task: BaseSerialPortTask) {
         helper.sendBuffer(task)
+    }
+
+    fun addDataPickListener(listener: OnDataPickListener) {
+        helper.addDataPickListener(listener)
+    }
+
+    fun removeDataPickListener(listener: OnDataPickListener) {
+        helper.removeDataPickListener(listener)
     }
 }
