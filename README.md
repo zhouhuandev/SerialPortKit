@@ -26,6 +26,7 @@
 - 支持自定义发送任务Task
 - 支持指令池组装
 - 支持指令工具
+- 支持统一数据结果回调
 
 ## 使用方法
 
@@ -316,6 +317,34 @@ Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
 
 注：支持串口与波特率可以同时进行切换
 
+### 统一监听数据接口
+
+支持除任务以外的数据回调，增加监听。与发送 Task 任务收到的回调数据是互斥关系（剔除了 Task 回调的数据），优先级低于 Task 任务回调。
+
+此处回调不参与校验地址位，但是仍然可选参与自定义指令规则。
+
+```kotlin
+
+    override fun onResume() {
+        super.onResume()
+        // 增加统一监听回调
+        MyApp.portManager?.addDataPickListener(onDataPickListener)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // 移除统一监听回调
+        MyApp.portManager?.removeDataPickListener(onDataPickListener)
+    }
+
+    private val onDataPickListener: OnDataPickListener = object : OnDataPickListener {
+        override fun onSuccess(data: WrapReceiverData) {
+            Log.d(TAG, "统一响应数据：${TypeConversion.bytes2HexString(data.data)}")
+        }
+    }
+
+```
+
 ### 命令管理池
 
 ```kotlin
@@ -380,6 +409,7 @@ Blog : "https://blog.csdn.net/youxun1312"
 ## 日志
 
 - 2022.03.01 开源发布
+- 2022.03.10 增加统一数据监听回调
 
 ## License
 
