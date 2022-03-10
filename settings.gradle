@@ -12,7 +12,7 @@ dependencyResolutionManagement {
         libs {
             version('applicationId','com.serial.port.kit')
             version('compileSdk','31')
-            version('minSdk','21')
+            version('minSdk','16')
             version('targetSdk','31')
             version('versionCode','1')
             version('versionName','1.0.0')
