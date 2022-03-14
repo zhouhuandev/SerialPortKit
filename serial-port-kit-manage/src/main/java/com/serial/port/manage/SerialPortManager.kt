@@ -82,12 +82,12 @@ class SerialPortManager(
         return helper.closeDevice()
     }
 
-    fun send(wrapSendData: WrapSendData, onDataReceiverListener: OnDataReceiverListener) {
-        send(SimpleSerialPortTask(wrapSendData, onDataReceiverListener))
+    fun send(wrapSendData: WrapSendData, onDataReceiverListener: OnDataReceiverListener): Boolean {
+        return send(SimpleSerialPortTask(wrapSendData, onDataReceiverListener))
     }
 
-    fun send(task: BaseSerialPortTask) {
-        helper.sendBuffer(task)
+    fun send(task: BaseSerialPortTask): Boolean {
+        return helper.sendBuffer(task)
     }
 
     fun addDataPickListener(listener: OnDataPickListener) {
