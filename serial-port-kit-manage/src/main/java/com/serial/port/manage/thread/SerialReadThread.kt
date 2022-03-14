@@ -39,15 +39,15 @@ internal class SerialReadThread(
             // 读取数据
             val inputStream = mSerialPort.inputStream
             try {
-                val buffer = ByteArray(dataProcess.maxSize)
-                val size = inputStream.read(buffer)
-                if (size > 0) {
-                    if (dataProcess.isCustom) {
-                        // 自定义协议解析
-                        dataProcess.manager.config.dataCheckCall?.customCheck(buffer, size) {
-                            dataProcess.processingRecData(it.data, it.size)
-                        }
-                    } else {
+                if (dataProcess.isCustom) {
+                    // 自定义协议解析
+                    dataProcess.manager.config.dataCheckCall?.customCheck(inputStream) {
+                        dataProcess.processingRecData(it.data, it.size)
+                    }
+                } else {
+                    val buffer = ByteArray(dataProcess.maxSize)
+                    val size = inputStream.read(buffer)
+                    if (size > 0) {
                         dataProcess.processingRecData(buffer, size)
                     }
                 }

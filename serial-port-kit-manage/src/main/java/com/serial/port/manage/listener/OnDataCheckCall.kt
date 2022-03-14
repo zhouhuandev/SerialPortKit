@@ -1,6 +1,7 @@
 package com.serial.port.manage.listener
 
 import com.serial.port.manage.data.WrapReceiverData
+import java.io.InputStream
 
 /**
  * 自定义校验数据回调
@@ -10,8 +11,7 @@ import com.serial.port.manage.data.WrapReceiverData
  */
 interface OnDataCheckCall {
     fun customCheck(
-        buffer: ByteArray,
-        size: Int,
+        inputStream: InputStream,
         onDataPickCall: (WrapReceiverData) -> Unit
     ): Boolean
 }
