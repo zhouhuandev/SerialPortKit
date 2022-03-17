@@ -24,6 +24,7 @@ class SerialPortManager(
     companion object {
         private const val TAG = "SerialPortManager"
         const val MAX_RETRY_COUNT = 3
+        const val MAX_RECEIVE_COUNT = 3
     }
 
     internal var retryCount = config.retryCount

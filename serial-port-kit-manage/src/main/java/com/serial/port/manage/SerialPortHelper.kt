@@ -219,7 +219,11 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
         data: WrapReceiverData,
         block: ((Boolean) -> Unit)
     ) {
-        if (task.receiveCount < manager.config.receiveMaxCount) {
+        // Task 自定义接收次数若是不为0，则按照其 Task 自定义次数接收，否则按照全局最大接收次数接收
+        val receiveMaxCount = if (task.sendWrapData().receiveMaxCount != 0) task.sendWrapData().receiveMaxCount else manager.config.receiveMaxCount
+        // 接收次数小于最大次数，则代表一定进行回调
+        block.invoke(task.receiveCount < receiveMaxCount)
+        if (task.receiveCount < receiveMaxCount) {
             task.receiveCount++
             task.waitTime = System.currentTimeMillis()
             switchThread(task) {
@@ -227,14 +231,12 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
                     duration = abs(task.waitTime - task.sendTime)
                 })
             }
-            if (task.receiveCount == manager.config.receiveMaxCount) {
+            if (task.receiveCount == receiveMaxCount) {
                 invalidTasks.add(task)
             }
         } else {
             invalidTasks.add(task)
         }
-        // 接收次数小于最大次数，则代表一定进行回调
-        block.invoke(task.receiveCount < manager.config.receiveMaxCount)
     }
 
     /**

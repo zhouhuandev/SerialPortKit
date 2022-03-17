@@ -79,8 +79,8 @@ class SerialPortKit private constructor(builder: Builder) {
         private fun checkParams() {
             check(path != "") { "Path is must important parameters，and it cannot be null!" }
             check(baudRate >= 0) { "The baudRate is $baudRate, BaudRate is must important parameters，and it cannot be less than 0!" }
-            check(retryCount in 1..SerialPortManager.MAX_RETRY_COUNT) { "The retryCount is $retryCount, The number of retries should be between 0 and 3!" }
-            check(receiveMaxCount > 0) { "The retryCount is $receiveMaxCount, At least one Count!" }
+            check(retryCount in 1..SerialPortManager.MAX_RETRY_COUNT) { "The retryCount is $retryCount, The number of retries should be between 1 and 3!" }
+            check(receiveMaxCount in 1..SerialPortManager.MAX_RECEIVE_COUNT) { "The receiveMaxCount is $receiveMaxCount, The number of retries should be between 1 and 3!" }
             if (isCustom) {
                 checkNotNull(dataCheckCall) { "isCustom is ture, dataCheckCall is not null !" }
             }
