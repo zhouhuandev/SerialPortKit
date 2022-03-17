@@ -27,6 +27,8 @@
 - 支持指令池组装
 - 支持指令工具
 - 支持统一数据结果回调
+- 支持自定义发送Task接收次数
+- 支持统一配置发送Task接收次数
 
 ## 使用方法
 
@@ -203,14 +205,18 @@ Log.d(TAG, "串口关闭${if (close) "成功" else "失败"}")
 
 ### WrapSendData 自定义收发超时时长
 
-默认发送超时时长为 3000ms，等待超时时长为 300ms
+默认发送超时时长为 3000ms，等待超时时长为 300ms，自定义最大接收次数 0
+
+注：自定义最大接收次数比全局配置最大接收次数优先级高。当自定义最大接收次数为 0 代表默认使用全局最大接收次数
 
 ```kotlin
 data class WrapSendData
 @JvmOverloads constructor(
     var sendData: ByteArray,
     var sendOutTime: Int = 3000,
-    var waitOutTime: Int = 300
+    var waitOutTime: Int = 300,
+    @IntRange(from = 0, to = 3)
+    var receiveMaxCount: Int = 0
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -221,6 +227,7 @@ data class WrapSendData
         if (!sendData.contentEquals(other.sendData)) return false
         if (sendOutTime != other.sendOutTime) return false
         if (waitOutTime != other.waitOutTime) return false
+        if (receiveMaxCount != other.receiveMaxCount) return false
 
         return true
     }
@@ -229,6 +236,7 @@ data class WrapSendData
         var result = sendData.contentHashCode()
         result = 31 * result + sendOutTime
         result = 31 * result + waitOutTime
+        result = 31 * result + receiveMaxCount
         return result
     }
 }
