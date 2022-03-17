@@ -29,7 +29,8 @@ class SerialPortManager(
     internal var retryCount = config.retryCount
     internal val helper = SerialPortHelper(this)
     internal val dispatcher = SerialPortDispatcher(config)
-    val isOpenDevice = helper.isOpenDevice
+    val isOpenDevice
+        get() = helper.isOpenDevice
 
     init {
         helper.onRetryCall = object : OnRetryCall {
