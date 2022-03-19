@@ -5,7 +5,12 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import com.serial.port.kit.core.common.TypeConversion
-import com.serial.port.kit.sender.SenderManager
+import com.serial.port.kit.manage.SenderManager
+import com.serial.port.kit.manage.SerialPortManager
+import com.serial.port.kit.manage.listener.OnReadSystemStateListener
+import com.serial.port.kit.manage.listener.OnReadVersionListener
+import com.serial.port.kit.manage.model.DeviceVersionModel
+import com.serial.port.kit.manage.model.SystemStateModel
 import com.serial.port.manage.data.WrapReceiverData
 import com.serial.port.manage.data.WrapSendData
 import com.serial.port.manage.listener.OnDataPickListener
@@ -18,6 +23,8 @@ class MainActivity : AppCompatActivity() {
     private val button3: Button by lazy { findViewById(R.id.button3) }
     private val button4: Button by lazy { findViewById(R.id.button4) }
     private val button5: Button by lazy { findViewById(R.id.button5) }
+    private val button6: Button by lazy { findViewById(R.id.button6) }
+    private val button7: Button by lazy { findViewById(R.id.button7) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,19 +35,19 @@ class MainActivity : AppCompatActivity() {
     private fun initView() {
         // 打开串口
         button.setOnClickListener {
-            if (MyApp.portManager?.isOpenDevice == false) {
-                val open = MyApp.portManager?.open() ?: false
+            if (!MyApp.portManager.isOpenDevice) {
+                val open = MyApp.portManager.open()
                 Log.d(TAG, "串口打开${if (open) "成功" else "失败"}")
             }
         }
         // 关闭串口
         button2.setOnClickListener {
-            val close = MyApp.portManager?.close() ?: false
+            val close = MyApp.portManager.close()
             Log.d(TAG, "串口关闭${if (close) "成功" else "失败"}")
         }
         // 发送数据
         button3.setOnClickListener {
-            MyApp.portManager?.send(WrapSendData(SenderManager.getSender().sendStartDetect()),
+            MyApp.portManager.send(WrapSendData(SenderManager.getSender().sendStartDetect()),
                 object : OnDataReceiverListener {
                     override fun onSuccess(data: WrapReceiverData) {
                         Log.d(TAG, "响应数据：${TypeConversion.bytes2HexString(data.data)}")
@@ -60,27 +67,44 @@ class MainActivity : AppCompatActivity() {
         }
         // 切换串口
         button4.setOnClickListener {
-            val switchDevice = MyApp.portManager?.switchDevice(path = "/dev/ttyS1") ?: false
+            val switchDevice = MyApp.portManager.switchDevice(path = "/dev/ttyS1")
             Log.d(TAG, "串口切换${if (switchDevice) "成功" else "失败"}")
         }
         // 切换波特率
         button5.setOnClickListener {
-            val switchDevice = MyApp.portManager?.switchDevice(baudRate = 9600) ?: false
+            val switchDevice = MyApp.portManager.switchDevice(baudRate = 9600)
             Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
 
         }
+        // 读取版本信息
+        button6.setOnClickListener {
+            SerialPortManager.readVersion(object : OnReadVersionListener {
+                override fun onResult(deviceVersionModel: DeviceVersionModel) {
+                    Log.d(TAG, "onResult: $deviceVersionModel")
+                }
+            })
+        }
+        // 读取系统信息
+        button7.setOnClickListener {
+            SerialPortManager.readSystemState(object : OnReadSystemStateListener {
+                override fun onResult(systemStateModel: SystemStateModel) {
+                    Log.d(TAG, "onResult: $systemStateModel")
+                }
+            })
+        }
+
     }
 
     override fun onResume() {
         super.onResume()
         // 增加统一监听回调
-        MyApp.portManager?.addDataPickListener(onDataPickListener)
+        MyApp.portManager.addDataPickListener(onDataPickListener)
     }
 
     override fun onPause() {
         super.onPause()
         // 移除统一监听回调
-        MyApp.portManager?.removeDataPickListener(onDataPickListener)
+        MyApp.portManager.removeDataPickListener(onDataPickListener)
     }
 
     private val onDataPickListener: OnDataPickListener = object : OnDataPickListener {

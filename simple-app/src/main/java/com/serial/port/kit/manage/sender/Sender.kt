@@ -1,4 +1,4 @@
-package com.serial.port.kit.sender
+package com.serial.port.kit.manage.sender
 
 /**
  * 发送指令接口

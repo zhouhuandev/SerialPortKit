@@ -1,4 +1,4 @@
-package com.serial.port.kit.command
+package com.serial.port.kit.manage.command
 
 import com.serial.port.manage.command.protocol.BaseProtocol
 

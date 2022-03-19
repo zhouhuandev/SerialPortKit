@@ -1,7 +1,7 @@
-package com.serial.port.kit.sender
+package com.serial.port.kit.manage.sender
 
-import com.serial.port.kit.command.SerialCommandProtocol.onCmdCheckDeviceStatusInfo
-import com.serial.port.kit.command.SerialCommandProtocol.onCmdReadVersionStatus
+import com.serial.port.kit.manage.command.SerialCommandProtocol.onCmdCheckDeviceStatusInfo
+import com.serial.port.kit.manage.command.SerialCommandProtocol.onCmdReadVersionStatus
 
 /**
  * 发送指令实现

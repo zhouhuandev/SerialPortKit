@@ -1,4 +1,7 @@
-package com.serial.port.kit.sender
+package com.serial.port.kit.manage
+
+import com.serial.port.kit.manage.sender.AdapterSender
+import com.serial.port.kit.manage.sender.Sender
 
 /**
  * 串口数据发送工具管理初始化
