@@ -82,8 +82,17 @@ class MyApp : Application() {
     companion object {
         private const val TAG = "MyApp"
 
+        private lateinit var serialPortManager: SerialPortManager
+
         @JvmStatic
-        var portManager: SerialPortManager? = null
+        val portManager: SerialPortManager
+            get() {
+                // 默认开启串口
+                if (!serialPortManager.isOpenDevice) {
+                    serialPortManager.open()
+                }
+                return serialPortManager
+            }
     }
 
     override fun onCreate() {
@@ -110,7 +119,7 @@ class MyApp : Application() {
             .maxSize(1024)
             // 发送失败重试次数
             .retryCount(2)
-            // 发送一次指令，最多接收几次设备发送的数据
+            // 发送一次指令，最多接收几次设备发送的数据，局部接收次数优先级高
             .receiveMaxCount(1)
             // 是否按照 maxSize 内存进行接收
             .isReceiveMaxSize(false)
@@ -121,12 +130,17 @@ class MyApp : Application() {
             // 是否自定义校验下位机发送的数据正确性，把校验好的Byte数组装入WrapReceiverData
             .isCustom(true, object : OnDataCheckCall {
                 override fun customCheck(
-                    buffer: ByteArray,
-                    size: Int,
+                    inputStream: InputStream,
                     onDataPickCall: (WrapReceiverData) -> Unit
                 ): Boolean {
-                    onDataPickCall.invoke(WrapReceiverData(buffer, size))
-                    return true
+                    val tempBuffer = ByteArray(64)
+                    val bodySize = inputStream.read(tempBuffer)
+                    return if (bodySize > 0) {
+                        onDataPickCall.invoke(WrapReceiverData(tempBuffer, bodySize))
+                        true
+                    } else {
+                        false
+                    }
                 }
             })
             // 校验发送指令与接收指令的地址位，相同则为一次正常的通讯
@@ -190,7 +204,7 @@ Android与下位机通讯，没有固定的通讯协议，都是根据各自项�
 ### 开启串口
 
 ```kotlin
-if (MyApp.portManager?.isOpenDevice == false) {
+if (!MyApp.portManager.isOpenDevice) {
     val open = MyApp.portManager?.open() ?: false
     Log.d(TAG, "串口打开${if (open) "成功" else "失败"}")
 }
@@ -199,7 +213,7 @@ if (MyApp.portManager?.isOpenDevice == false) {
 ### 关闭串口
 
 ```kotlin
-val close = MyApp.portManager?.close() ?: false
+val close = MyApp.portManager.close()
 Log.d(TAG, "串口关闭${if (close) "成功" else "失败"}")
 ```
 
@@ -245,7 +259,7 @@ data class WrapSendData
 ### WrapSendData 发送数据
 
 ```kotlin
-MyApp.portManager?.send(WrapSendData(byteArrayOf(0xAA.toByte(),0xA1.toByte(),0x00.toByte(), 0xB5.toByte())),
+MyApp.portManager.send(WrapSendData(byteArrayOf(0xAA.toByte(),0xA1.toByte(),0x00.toByte(), 0xB5.toByte())),
     object : OnDataReceiverListener {
         override fun onSuccess(data: WrapReceiverData) {
             Log.d(TAG, "响应数据：${TypeConversion.bytes2HexString(data.data)}")
@@ -294,7 +308,7 @@ class SimpleSerialPortTask(
 发送Task
 
 ```kotlin
-MyApp.portManager?.send(SimpleSerialPortTask(WrapSendData(SenderManager.getSender().sendStartDetect()), object : OnDataReceiverListener {
+MyApp.portManager.send(SimpleSerialPortTask(WrapSendData(SenderManager.getSender().sendStartDetect()), object : OnDataReceiverListener {
     override fun onSuccess(data: WrapReceiverData) {
         Log.d(TAG, "响应数据：${TypeConversion.bytes2HexString(data.data)}")
     }
@@ -315,14 +329,14 @@ MyApp.portManager?.send(SimpleSerialPortTask(WrapSendData(SenderManager.getSende
 ### 切换串口
 
 ```kotlin
-val switchDevice = MyApp.portManager?.switchDevice(path = "/dev/ttyS1") ?: false
+val switchDevice = MyApp.portManager?.switchDevice(path = "/dev/ttyS1")
 Log.d(TAG, "串口切换${if (switchDevice) "成功" else "失败"}")
 ```
 
 ### 切换波特率
 
 ```kotlin
-val switchDevice = MyApp.portManager?.switchDevice(baudRate = 9600) ?: false
+val switchDevice = MyApp.portManager?.switchDevice(baudRate = 9600)
 Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
 ```
 
@@ -339,13 +353,13 @@ Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
     override fun onResume() {
         super.onResume()
         // 增加统一监听回调
-        MyApp.portManager?.addDataPickListener(onDataPickListener)
+        MyApp.portManager.addDataPickListener(onDataPickListener)
     }
 
     override fun onPause() {
         super.onPause()
         // 移除统一监听回调
-        MyApp.portManager?.removeDataPickListener(onDataPickListener)
+        MyApp.portManager.removeDataPickListener(onDataPickListener)
     }
 
     private val onDataPickListener: OnDataPickListener = object : OnDataPickListener {
