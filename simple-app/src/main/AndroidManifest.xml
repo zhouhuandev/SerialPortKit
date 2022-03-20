@@ -19,6 +19,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <provider
+            android:name=".provider.ContextProvider"
+            android:authorities="${applicationId}.contextProvider"
+            android:exported="false" />
     </application>
 
 </manifest>

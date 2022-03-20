@@ -6,7 +6,7 @@ import android.util.Log
 import android.widget.Button
 import com.serial.port.kit.core.common.TypeConversion
 import com.serial.port.kit.manage.SenderManager
-import com.serial.port.kit.manage.SerialPortManager
+import com.serial.port.kit.manage.SerialPortHelper
 import com.serial.port.kit.manage.listener.OnReadSystemStateListener
 import com.serial.port.kit.manage.listener.OnReadVersionListener
 import com.serial.port.kit.manage.model.DeviceVersionModel
@@ -35,19 +35,21 @@ class MainActivity : AppCompatActivity() {
     private fun initView() {
         // 打开串口
         button.setOnClickListener {
-            if (!MyApp.portManager.isOpenDevice) {
-                val open = MyApp.portManager.open()
+            if (!SerialPortHelper.portManager.isOpenDevice) {
+                val open = SerialPortHelper.portManager.open()
                 Log.d(TAG, "串口打开${if (open) "成功" else "失败"}")
             }
         }
         // 关闭串口
         button2.setOnClickListener {
-            val close = MyApp.portManager.close()
+            val close = SerialPortHelper.portManager.close()
             Log.d(TAG, "串口关闭${if (close) "成功" else "失败"}")
         }
         // 发送数据
         button3.setOnClickListener {
-            MyApp.portManager.send(WrapSendData(SenderManager.getSender().sendStartDetect()),
+            SerialPortHelper.portManager.send(WrapSendData(
+                SenderManager.getSender().sendStartDetect()
+            ),
                 object : OnDataReceiverListener {
                     override fun onSuccess(data: WrapReceiverData) {
                         Log.d(TAG, "响应数据：${TypeConversion.bytes2HexString(data.data)}")
@@ -67,18 +69,18 @@ class MainActivity : AppCompatActivity() {
         }
         // 切换串口
         button4.setOnClickListener {
-            val switchDevice = MyApp.portManager.switchDevice(path = "/dev/ttyS1")
+            val switchDevice = SerialPortHelper.portManager.switchDevice(path = "/dev/ttyS1")
             Log.d(TAG, "串口切换${if (switchDevice) "成功" else "失败"}")
         }
         // 切换波特率
         button5.setOnClickListener {
-            val switchDevice = MyApp.portManager.switchDevice(baudRate = 9600)
+            val switchDevice = SerialPortHelper.portManager.switchDevice(baudRate = 9600)
             Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
 
         }
         // 读取版本信息
         button6.setOnClickListener {
-            SerialPortManager.readVersion(object : OnReadVersionListener {
+            SerialPortHelper.readVersion(object : OnReadVersionListener {
                 override fun onResult(deviceVersionModel: DeviceVersionModel) {
                     Log.d(TAG, "onResult: $deviceVersionModel")
                 }
@@ -86,7 +88,7 @@ class MainActivity : AppCompatActivity() {
         }
         // 读取系统信息
         button7.setOnClickListener {
-            SerialPortManager.readSystemState(object : OnReadSystemStateListener {
+            SerialPortHelper.readSystemState(object : OnReadSystemStateListener {
                 override fun onResult(systemStateModel: SystemStateModel) {
                     Log.d(TAG, "onResult: $systemStateModel")
                 }
@@ -98,13 +100,13 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         // 增加统一监听回调
-        MyApp.portManager.addDataPickListener(onDataPickListener)
+        SerialPortHelper.portManager.addDataPickListener(onDataPickListener)
     }
 
     override fun onPause() {
         super.onPause()
         // 移除统一监听回调
-        MyApp.portManager.removeDataPickListener(onDataPickListener)
+        SerialPortHelper.portManager.removeDataPickListener(onDataPickListener)
     }
 
     private val onDataPickListener: OnDataPickListener = object : OnDataPickListener {
