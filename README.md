@@ -72,45 +72,30 @@ configurations.all {
 }
 ```
 
-### 初始化
+### 快速初始化
 
-老规矩，仍然是在Application中初始化。
+为了隔离第三方SDK，下面提供代理方式的初始化方案，只有使用的时候才会进行初始化
+
+#### SerialPortProxy代理类
 
 ```kotlin
-class MyApp : Application() {
+class SerialPortProxy {
 
     companion object {
-        private const val TAG = "MyApp"
-
-        private lateinit var serialPortManager: SerialPortManager
-
-        @JvmStatic
-        val portManager: SerialPortManager
-            get() {
-                // 默认开启串口
-                if (!serialPortManager.isOpenDevice) {
-                    serialPortManager.open()
-                }
-                return serialPortManager
-            }
+        private const val TAG = "SerialPortProxy"
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        initSerialPort()
-    }
+    private lateinit var serialPortManager: SerialPortManager
 
-    private fun initSerialPort() {
-        try {
-            val serialPortFinder = SerialPortFinder()
-            serialPortFinder.allDevices.forEach {
-                Log.d(TAG, "搜索到的串口信息为: $it")
-            }
-        } catch (e: Exception) {
-            Log.d(TAG, "initSerialPort: ", e)
-        }
+    private var isInitSuccess = false
 
-        portManager = SerialPortKit.newBuilder(this)
+    private val isInit
+        get() = isInitSuccess
+
+    private fun initSdk() {
+        searchAllDevices()
+
+        serialPortManager = SerialPortKit.newBuilder(ContextProvider.appContext)
             // 设备地址
             .path("/dev/ttyS0")
             // 波特率
@@ -128,33 +113,65 @@ class MyApp : Application() {
             // 是否Debug模式，Debug模式会输出Log
             .debug(BuildConfig.DEBUG)
             // 是否自定义校验下位机发送的数据正确性，把校验好的Byte数组装入WrapReceiverData
-            .isCustom(true, object : OnDataCheckCall {
-                override fun customCheck(
-                    inputStream: InputStream,
-                    onDataPickCall: (WrapReceiverData) -> Unit
-                ): Boolean {
-                    val tempBuffer = ByteArray(64)
-                    val bodySize = inputStream.read(tempBuffer)
-                    return if (bodySize > 0) {
-                        onDataPickCall.invoke(WrapReceiverData(tempBuffer, bodySize))
-                        true
-                    } else {
-                        false
-                    }
-                }
-            })
+            .isCustom(true, DataConvertUtil.customProtocol())
             // 校验发送指令与接收指令的地址位，相同则为一次正常的通讯
-            .addressCheckCall(object : OnAddressCheckCall {
-                override fun checkAddress(
-                    wrapSendData: WrapSendData,
-                    wrapReceiverData: WrapReceiverData
-                ): Boolean {
-                    return wrapSendData.sendData[1] == wrapReceiverData.data[1]
-                }
-            })
+            .addressCheckCall(DataConvertUtil.addressCheckCall())
             .build()
             .get()
+
+        isInitSuccess = true
     }
+
+    private fun reInitSdk() {
+        if (!isInit) {
+            initSdk()
+        }
+    }
+
+    fun searchAllDevices() {
+        try {
+            val serialPortFinder = SerialPortFinder()
+            serialPortFinder.allDevices.forEach {
+                Log.d(TAG, "搜索到的串口信息为: $it")
+            }
+        } catch (e: Exception) {
+            Log.d(TAG, "initSerialPort: ", e)
+        }
+    }
+
+    val portManager: SerialPortManager
+        get() {
+            reInitSdk()
+            return serialPortManager
+        }
+}
+```
+
+#### SerialPortHelper
+
+当然，光代理指定是不可以的，肯定还需要一个助手呀，助手这就来了，核心就是为了解决部分不需要的一些回调，进行充分的解耦。让发送指令单单就是发送指令，而让业务只专注它需要的数据回调。
+
+```kotlin
+object SerialPortHelper {
+    private val mProxy = SerialPortProxy()
+
+    /**
+     * 暴露SDK
+     */
+    val portManager: SerialPortManager
+        get() = mProxy.portManager
+
+    /**
+     * 内部使用，默认开启串口
+     */
+    private val serialPortManager: SerialPortManager
+        get() {
+            // 默认开启串口
+            if (!mProxy.portManager.isOpenDevice) {
+                mProxy.portManager.open()
+            }
+            return portManager
+        }
 }
 ```
 
@@ -204,8 +221,8 @@ Android与下位机通讯，没有固定的通讯协议，都是根据各自项�
 ### 开启串口
 
 ```kotlin
-if (!MyApp.portManager.isOpenDevice) {
-    val open = MyApp.portManager?.open() ?: false
+if (!SerialPortHelper.portManager.isOpenDevice) {
+    val open = SerialPortHelper.portManager.open()
     Log.d(TAG, "串口打开${if (open) "成功" else "失败"}")
 }
 ```
@@ -213,7 +230,7 @@ if (!MyApp.portManager.isOpenDevice) {
 ### 关闭串口
 
 ```kotlin
-val close = MyApp.portManager.close()
+val close = SerialPortHelper.portManager.close()
 Log.d(TAG, "串口关闭${if (close) "成功" else "失败"}")
 ```
 
@@ -259,14 +276,19 @@ data class WrapSendData
 ### WrapSendData 发送数据
 
 ```kotlin
-MyApp.portManager.send(WrapSendData(byteArrayOf(0xAA.toByte(),0xA1.toByte(),0x00.toByte(), 0xB5.toByte())),
+SerialPortHelper.portManager.send(WrapSendData(
+    SenderManager.getSender().sendStartDetect()
+),
     object : OnDataReceiverListener {
         override fun onSuccess(data: WrapReceiverData) {
             Log.d(TAG, "响应数据：${TypeConversion.bytes2HexString(data.data)}")
         }
 
         override fun onFailed(wrapSendData: WrapSendData, msg: String) {
-            Log.e(TAG,"发送数据: ${TypeConversion.bytes2HexString(wrapSendData.sendData)}, $msg")
+            Log.e(
+                TAG,
+                "发送数据: ${TypeConversion.bytes2HexString(wrapSendData.sendData)}, $msg"
+            )
         }
 
         override fun onTimeOut() {
@@ -308,7 +330,7 @@ class SimpleSerialPortTask(
 发送Task
 
 ```kotlin
-MyApp.portManager.send(SimpleSerialPortTask(WrapSendData(SenderManager.getSender().sendStartDetect()), object : OnDataReceiverListener {
+SerialPortHelper.portManager.send(SimpleSerialPortTask(WrapSendData(SenderManager.getSender().sendStartDetect()), object : OnDataReceiverListener {
     override fun onSuccess(data: WrapReceiverData) {
         Log.d(TAG, "响应数据：${TypeConversion.bytes2HexString(data.data)}")
     }
@@ -329,14 +351,14 @@ MyApp.portManager.send(SimpleSerialPortTask(WrapSendData(SenderManager.getSender
 ### 切换串口
 
 ```kotlin
-val switchDevice = MyApp.portManager?.switchDevice(path = "/dev/ttyS1")
+val switchDevice = SerialPortHelper.portManager.switchDevice(path = "/dev/ttyS1")
 Log.d(TAG, "串口切换${if (switchDevice) "成功" else "失败"}")
 ```
 
 ### 切换波特率
 
 ```kotlin
-val switchDevice = MyApp.portManager?.switchDevice(baudRate = 9600)
+val switchDevice = SerialPortHelper.portManager.switchDevice(baudRate = 9600)
 Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
 ```
 
@@ -353,13 +375,13 @@ Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
     override fun onResume() {
         super.onResume()
         // 增加统一监听回调
-        MyApp.portManager.addDataPickListener(onDataPickListener)
+        SerialPortHelper.portManager.addDataPickListener(onDataPickListener)
     }
 
     override fun onPause() {
         super.onPause()
         // 移除统一监听回调
-        MyApp.portManager.removeDataPickListener(onDataPickListener)
+        SerialPortHelper.portManager.removeDataPickListener(onDataPickListener)
     }
 
     private val onDataPickListener: OnDataPickListener = object : OnDataPickListener {
@@ -435,6 +457,7 @@ Blog : "https://blog.csdn.net/youxun1312"
 
 - 2022.03.01 开源发布
 - 2022.03.10 增加统一数据监听回调
+- 2022.03.20 修改示例Demo
 
 ## License
 
