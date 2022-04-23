@@ -40,8 +40,8 @@ object SerialPortHelper {
     private val serialPortManager: SerialPortManager
         get() {
             // 默认开启串口
-            if (!mProxy.portManager.isOpenDevice) {
-                mProxy.portManager.open()
+            if (!portManager.isOpenDevice) {
+                portManager.open()
             }
             return portManager
         }
