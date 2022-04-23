@@ -16,6 +16,7 @@ object TypeConversion {
      * @param num
      * @return
      */
+    @JvmStatic
     fun isOdd(num: Int): Int {
         return num and 0x1
     }
@@ -24,6 +25,7 @@ object TypeConversion {
      * 字节转10进制
      * @param b
      */
+    @JvmStatic
     fun byte2Int(b: Byte): Int {
         return b.toInt()
     }
@@ -32,6 +34,7 @@ object TypeConversion {
      * 10进制转字节
      * @param i
      */
+    @JvmStatic
     fun int2Byte(i: Int): Byte {
         return i.toByte()
     }
@@ -42,6 +45,7 @@ object TypeConversion {
      * @param b
      * @return
      */
+    @JvmStatic
     fun byte2hex(b: ByteArray): String {
         val sb = StringBuffer()
         var tmp: String?
@@ -60,6 +64,7 @@ object TypeConversion {
      * @param bytes
      * @return
      */
+    @JvmStatic
     fun bytes2hex(bytes: ByteArray): String {
         val hex = "0123456789abcdef"
         val sb = StringBuilder(bytes.size * 2)
@@ -78,6 +83,7 @@ object TypeConversion {
      * @param src 字节数组
      * @return 16进制字符串 01 30 31 32
      */
+    @JvmStatic
     fun bytes2HexString(src: ByteArray): String? {
         if (src.isEmpty()) {
             return null
@@ -100,6 +106,7 @@ object TypeConversion {
      * @param strPart 字符串
      * @return 16进制字符串
      */
+    @JvmStatic
     fun string2HexString(strPart: String): String {
         val hexString = StringBuffer()
         for (element in strPart) {
@@ -116,6 +123,7 @@ object TypeConversion {
      * @param src 16进制字符串
      * @return 字节数组
      */
+    @JvmStatic
     fun hexString2String(src: String): String {
         var temp = ""
         for (i in 0 until src.length / 2) {
@@ -134,6 +142,7 @@ object TypeConversion {
      * @param src
      * @return Byte
      */
+    @JvmStatic
     fun char2Byte(src: Char): Byte {
         return Integer.valueOf(src.code).toByte()
     }
@@ -142,11 +151,12 @@ object TypeConversion {
      * 10进制数字转成16进制
      *
      * @param a   转化数据
-     * @param len 占用字节数
+     * @param length 占用字节数
      * @return
      */
-    private fun intToHexString(a: Int, len: Int): String {
-        var len = len
+    @JvmStatic
+    private fun intToHexString(a: Int, length: Int): String {
+        var len = length
         len = len shl 1
         var hexString = Integer.toHexString(a)
         val b = len - hexString.length
@@ -158,6 +168,7 @@ object TypeConversion {
         return hexString
     }
 
+    @JvmStatic
     fun hexStringToByte(hex: String): ByteArray {
         val len = hex.length / 2
         val result = ByteArray(len)
@@ -183,6 +194,7 @@ object TypeConversion {
      * @param data
      * @return
      */
+    @JvmStatic
     fun getUnsignedByte(data: Byte): Int {
         return data.toInt() and 0x0FF
     }
@@ -193,6 +205,7 @@ object TypeConversion {
      * @param data
      * @return
      */
+    @JvmStatic
     fun getUnsignedByte(data: Short): Int {
         return data.toInt() and 0x0FFFF
     }
@@ -203,6 +216,7 @@ object TypeConversion {
      * @param data
      * @return
      */
+    @JvmStatic
     fun getUnsignedInt(data: Int): Long {
         return (data.toInt() and 0x0FFFFFFFFL.toInt()).toLong()
     }
@@ -213,6 +227,7 @@ object TypeConversion {
      * @param data
      * @return
      */
+    @JvmStatic
     fun getHeight4(data: Byte): Int {
         return data.toInt() and 0xf0 shr 4
     }
@@ -223,6 +238,7 @@ object TypeConversion {
      * @param data
      * @return
      */
+    @JvmStatic
     fun getLow4(data: Byte): Int {
         return data.toInt() and 0x0f
     }
