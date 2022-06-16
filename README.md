@@ -45,7 +45,7 @@ repositories {
 }
 ```
 
-在 Android Studio Chipmunk 时 改为 settings.gradle 中添加：
+在 Android Studio Chipmunk 时 改为 `settings.gradle` 中添加：
 ```
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
