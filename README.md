@@ -45,6 +45,20 @@ repositories {
 }
 ```
 
+在 Android Studio Chipmunk 时 改为 settings.gradle 中添加：
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            name 'maven-snapshot'
+            url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+        }
+    }
+}
+
 在 app `build.gradle`中添加
 
 ```groovy
