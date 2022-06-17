@@ -34,7 +34,9 @@
 
 ### 接入方式
 
-在 Project `build.gradle`中添加
+#### AGP 7.0以下
+
+在 Project `build.gradle` 中添加
 
 ```groovy
 repositories {
@@ -45,10 +47,24 @@ repositories {
 }
 ```
 
+#### AGP 7.0以上
+
+在 Project `settings.gradle` 中添加
+```groovy
+dependencyResolutionManagement {
+    repositories {
+        maven {
+            name 'maven-snapshot'
+            url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+        }
+    }
+}
+```
+
 在 app `build.gradle`中添加
 
 ```groovy
-def serialPortVersion = "1.0.4-SNAPSHOT"
+def serialPortVersion = "1.0.5-SNAPSHOT"
 
 implementation "io.github.zhouhuandev:serial-port-kit-manage:$serialPortVersion" // require kotlin 1.7.0
 
