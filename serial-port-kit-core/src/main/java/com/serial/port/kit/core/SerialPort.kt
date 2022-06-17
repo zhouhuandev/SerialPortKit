@@ -1,6 +1,7 @@
 package com.serial.port.kit.core
 
 import android.util.Log
+import com.serial.port.kit.core.annotation.CmdSuShell
 import java.io.*
 
 /**
@@ -13,7 +14,8 @@ class SerialPort
 @JvmOverloads @Throws(IOException::class) constructor(
     device: File,
     baudRate: Int,
-    flags: Int = 0
+    flags: Int = 0,
+    @CmdSuShell cmdSuShell: Int = CMD_BIN_SU_SHELL
 ) {
 
     /**
@@ -38,7 +40,7 @@ class SerialPort
         get() = mFileOutputStream
 
     init {
-        checkPermission(device)
+        checkPermission(device, cmdSuShell)
         // 开启串口，传入物理地址，波特率，flag值
         mFd = open(device.absolutePath, baudRate, flags)
         if (mFd == null) {
@@ -51,14 +53,19 @@ class SerialPort
         mFileOutputStream = FileOutputStream(mFd)
     }
 
-    @Throws(SecurityException::class)
-    private fun checkPermission(device: File) {
+    @Throws(SecurityException::class, IllegalArgumentException::class)
+    private fun checkPermission(device: File, @CmdSuShell cmdSuShell: Int) {
         Log.i(TAG, "检测读写权限: 是否可读:${device.canRead()}，是否可写：${device.canWrite()}")
         // 检测设备管理权限，即文件的权限属性
         if (!device.canRead() || !device.canWrite()) {
             try {
                 // Missing read/write permission, trying to chmod the file
-                val su = Runtime.getRuntime().exec("/system/bin/su")
+                val command = when (cmdSuShell) {
+                    CMD_BIN_SU_SHELL -> "/system/bin/su"
+                    CMD_X_BIN_SU_SHELL -> "/system/xbin/su"
+                    else -> throw IllegalArgumentException("Unknown command: $cmdSuShell")
+                }
+                val su = Runtime.getRuntime().exec(command)
                 val cmd = """
             chmod 777 ${device.absolutePath}
             exit
@@ -98,5 +105,8 @@ class SerialPort
         }
 
         private const val TAG = "SerialPort"
+
+        const val CMD_BIN_SU_SHELL = 0
+        const val CMD_X_BIN_SU_SHELL = 1
     }
 }
