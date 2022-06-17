@@ -1,9 +1,11 @@
 # SerialPortKit
+
 ## Android串口通讯
 
 ### 介绍
 
-🔥🔥🔥**SerialPortKit**是基于Android开发板进行与下位机进行通讯的工具套件SDK。串口通讯部分使用`C++`实现。**SerialPortKit**旨在帮助做Android开发板硬件开发的小伙伴们快速迭代开发，只关注业务。通常涉及到`RK3288`、`RK3399`等设备，**SerialPortKit**都能帮助到你。
+🔥🔥🔥**SerialPortKit**是基于Android开发板进行与下位机进行通讯的工具套件SDK。串口通讯部分使用`C++`实现。**SerialPortKit**
+旨在帮助做Android开发板硬件开发的小伙伴们快速迭代开发，只关注业务。通常涉及到`RK3288`、`RK3399`等设备，**SerialPortKit**都能帮助到你。
 
 如果我的付出可以换来对您的帮助的话，还请您点个start，将会是我不懈更新的动力，万分感谢。如果在使用中有任何问题，请留言
 
@@ -20,7 +22,7 @@
 - 支持切换波特率
 - 支持指定接收最大数据长度
 - 支持发送/接收超时检测
-- 支持自定义收发超时时长 
+- 支持自定义收发超时时长
 - 支持主线程/子线程
 - 支持多线程并发通讯
 - 支持自定义发送任务Task
@@ -29,6 +31,8 @@
 - 支持统一数据结果回调
 - 支持自定义发送Task接收次数
 - 支持统一配置发送Task接收次数
+- 支持阻塞式接收数据
+- 支持提权 `su shell` 切换
 
 ## 使用方法
 
@@ -50,6 +54,7 @@ repositories {
 #### AGP 7.0以上
 
 在 Project `settings.gradle` 中添加
+
 ```groovy
 dependencyResolutionManagement {
     repositories {
@@ -130,6 +135,10 @@ class SerialPortProxy {
             .debug(BuildConfig.DEBUG)
             // 是否自定义校验下位机发送的数据正确性，把校验好的Byte数组装入WrapReceiverData
             .isCustom(true, DataConvertUtil.customProtocol())
+            // 阻塞式接收数据
+            .isBlockingReadData(true)
+            // 提权 `su shell` 切换
+            .setCmdSuShell(SerialPort.CMD_BIN_SU_SHELL)
             // 校验发送指令与接收指令的地址位，相同则为一次正常的通讯
             .addressCheckCall(DataConvertUtil.addressCheckCall())
             .build()
@@ -207,7 +216,8 @@ maxSize是接收最大数据长度，默认为64，也可以设置isReceiveMaxSi
 
 根据指定通讯协议来设置当前选项，根据往常项目中，有可能涉及到客户端发送一次指令，下位机会立即回复一次客户端发送的指令以代表建立了通讯。然后下位机进行处理任务，处理完任务以后会再次向客户端进行发送数据，这就涉及到发送一次指令，下位机回复两次数据的情况。对此，设计了一对多的收发指令。
 
-**eg**. A给B打电话讲：“你好。我一会要去你家”（A给B发送指令），B接到电话会讲：“你好。稍等一会给你回电话。”（B收到了A发来的指令，我知道你要来了，我去收拾一下家务），B（处理好指令（家务））给A回电话：“你来吧！”（B告诉A处理结果）
+**eg**.
+A给B打电话讲：“你好。我一会要去你家”（A给B发送指令），B接到电话会讲：“你好。稍等一会给你回电话。”（B收到了A发来的指令，我知道你要来了，我去收拾一下家务），B（处理好指令（家务））给A回电话：“你来吧！”（B告诉A处理结果）
 
 这个过程A一共发送一次指令，B收到指令以后，立即告诉A让他稍等一会，自己处理完了再告诉A结果。B是给A发送了两次指令。
 
@@ -228,11 +238,14 @@ Android与下位机通讯，没有固定的通讯协议，都是根据各自项�
 校验：有很多种校验方式，有CRC，ADD8等。
 ```
 
-根据命令格式进行解析，校验好数据以后通过 onDataPickCall.invoke(WrapReceiverData(buffer, size)) 把处理好的 Byte数组装载进入。注：return true或者return false，都可以，建议是返回 true。
+根据命令格式进行解析，校验好数据以后通过 onDataPickCall.invoke(WrapReceiverData(buffer, size)) 把处理好的 Byte数组装载进入。注：return
+true或者return false，都可以，建议是返回 true。
 
 ### 校验地址位
 
-制定串口通讯协议以后，不论是含有地址也好，还是命令（cmd）也好，为了组装好一次正常的配对通讯，一定要实现 addressCheckCall 当前接口，发送数据与收到数据都已暴露，执行取出地址位进行比较即可，返回 true 则是代表下位机返回的数据与发送数据是一对。否则继续等待下位机回来相匹配的数据。若是不实现该接口的话，则无论是否为当前发送指令的回复数据，都会回调至每个处于有效发送指令的接口。
+制定串口通讯协议以后，不论是含有地址也好，还是命令（cmd）也好，为了组装好一次正常的配对通讯，一定要实现 addressCheckCall
+当前接口，发送数据与收到数据都已暴露，执行取出地址位进行比较即可，返回 true
+则是代表下位机返回的数据与发送数据是一对。否则继续等待下位机回来相匹配的数据。若是不实现该接口的话，则无论是否为当前发送指令的回复数据，都会回调至每个处于有效发送指令的接口。
 
 ### 开启串口
 
@@ -315,9 +328,12 @@ SerialPortHelper.portManager.send(WrapSendData(
 
 ### 自定义Task 发送数据
 
-每条指令的发送，在底层是以每个单独的Task执行发送，互不干扰。自定义Task继承父类 BaseSerialPortTask,同时可监控发送任务开始前做相应的操作，也可以监控发送任务完成后作相应的任务操作，于此同时，可以切换当前发送任务以及最终的 OnDataReceiverListener 监听回调是否执行在主线程。默认是在子线程中执行及回调。
+每条指令的发送，在底层是以每个单独的Task执行发送，互不干扰。自定义Task继承父类
+BaseSerialPortTask,同时可监控发送任务开始前做相应的操作，也可以监控发送任务完成后作相应的任务操作，于此同时，可以切换当前发送任务以及最终的
+OnDataReceiverListener 监听回调是否执行在主线程。默认是在子线程中执行及回调。
 
 自定义Task
+
 ```kotlin
 class SimpleSerialPortTask(
     private val wrapSendData: WrapSendData,
@@ -346,22 +362,27 @@ class SimpleSerialPortTask(
 发送Task
 
 ```kotlin
-SerialPortHelper.portManager.send(SimpleSerialPortTask(WrapSendData(SenderManager.getSender().sendStartDetect()), object : OnDataReceiverListener {
-    override fun onSuccess(data: WrapReceiverData) {
-        Log.d(TAG, "响应数据：${TypeConversion.bytes2HexString(data.data)}")
-    }
+SerialPortHelper.portManager.send(
+    SimpleSerialPortTask(
+        WrapSendData(
+            SenderManager.getSender().sendStartDetect()
+        ), object : OnDataReceiverListener {
+            override fun onSuccess(data: WrapReceiverData) {
+                Log.d(TAG, "响应数据：${TypeConversion.bytes2HexString(data.data)}")
+            }
 
-    override fun onFailed(wrapSendData: WrapSendData, msg: String) {
-        Log.e(
-            TAG,
-            "发送数据: ${TypeConversion.bytes2HexString(wrapSendData.sendData)}, $msg"
-        )
-    }
+            override fun onFailed(wrapSendData: WrapSendData, msg: String) {
+                Log.e(
+                    TAG,
+                    "发送数据: ${TypeConversion.bytes2HexString(wrapSendData.sendData)}, $msg"
+                )
+            }
 
-    override fun onTimeOut() {
-        Log.e(TAG, "发送或者接收超时")
-    }
-}))
+            override fun onTimeOut() {
+                Log.e(TAG, "发送或者接收超时")
+            }
+        })
+)
 ```
 
 ### 切换串口
@@ -388,23 +409,23 @@ Log.d(TAG, "波特率切换${if (switchDevice) "成功" else "失败"}")
 
 ```kotlin
 
-    override fun onResume() {
-        super.onResume()
-        // 增加统一监听回调
-        SerialPortHelper.portManager.addDataPickListener(onDataPickListener)
-    }
+override fun onResume() {
+    super.onResume()
+    // 增加统一监听回调
+    SerialPortHelper.portManager.addDataPickListener(onDataPickListener)
+}
 
-    override fun onPause() {
-        super.onPause()
-        // 移除统一监听回调
-        SerialPortHelper.portManager.removeDataPickListener(onDataPickListener)
-    }
+override fun onPause() {
+    super.onPause()
+    // 移除统一监听回调
+    SerialPortHelper.portManager.removeDataPickListener(onDataPickListener)
+}
 
-    private val onDataPickListener: OnDataPickListener = object : OnDataPickListener {
-        override fun onSuccess(data: WrapReceiverData) {
-            Log.d(TAG, "统一响应数据：${TypeConversion.bytes2HexString(data.data)}")
-        }
+private val onDataPickListener: OnDataPickListener = object : OnDataPickListener {
+    override fun onSuccess(data: WrapReceiverData) {
+        Log.d(TAG, "统一响应数据：${TypeConversion.bytes2HexString(data.data)}")
     }
+}
 
 ```
 
@@ -474,6 +495,7 @@ Blog : "https://blog.csdn.net/youxun1312"
 - 2022.03.01 开源发布
 - 2022.03.10 增加统一数据监听回调
 - 2022.03.20 修改示例Demo
+- 2022.06.18 支持切换是否Block读取数据 & 切换 'su shell'
 
 ## License
 
