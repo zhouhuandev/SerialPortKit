@@ -1,6 +1,8 @@
 package com.serial.port.manage
 
 import android.app.Application
+import com.serial.port.kit.core.SerialPort
+import com.serial.port.kit.core.annotation.CmdSuShell
 import com.serial.port.manage.config.SerialPortConfig
 import com.serial.port.manage.config.SerialPortEnv
 import com.serial.port.manage.listener.OnAddressCheckCall
@@ -39,6 +41,7 @@ class SerialPortKit private constructor(builder: Builder) {
         internal var isReceiveMaxSize: Boolean = false
         internal var isCustom: Boolean = false
         internal var isBlockingReadData: Boolean = false
+        internal var cmdSuShell: Int = SerialPort.CMD_BIN_SU_SHELL
         internal var dataCheckCall: OnDataCheckCall? = null
         internal var addressCheckCall: OnAddressCheckCall? = null
         internal var debug = false
@@ -66,6 +69,9 @@ class SerialPortKit private constructor(builder: Builder) {
         fun isBlockingReadData(isBlockingReadData: Boolean): Builder = apply {
             this.isBlockingReadData = isBlockingReadData
         }
+
+        fun setCmdSuShell(@CmdSuShell cmdSuShell: Int): Builder =
+            apply { this.cmdSuShell = cmdSuShell }
 
         fun addressCheckCall(addressCheckCall: OnAddressCheckCall): Builder =
             apply { this.addressCheckCall = addressCheckCall }
@@ -102,6 +108,7 @@ class SerialPortKit private constructor(builder: Builder) {
             isReceiveMaxSize = builder.isReceiveMaxSize,
             isCustom = builder.isCustom,
             isBlockingReadData = builder.isBlockingReadData,
+            cmdSuShell = builder.cmdSuShell,
             dataCheckCall = builder.dataCheckCall,
             addressCheckCall = builder.addressCheckCall,
             debug = builder.debug,

@@ -60,7 +60,11 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
     private fun openDevice(manager: SerialPortManager): Boolean {
         requireNotNull(manager.config.path) { "You not have setting the device path!" }
         try {
-            mSerialPort = SerialPort(File(manager.config.path), manager.config.baudRate)
+            mSerialPort = SerialPort(
+                device = File(manager.config.path),
+                baudRate = manager.config.baudRate,
+                cmdSuShell = manager.config.cmdSuShell
+            )
             isOpenDevice = true
         } catch (e: Exception) {
             mSerialPort = null
@@ -220,7 +224,8 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
         block: ((Boolean) -> Unit)
     ) {
         // Task 自定义接收次数若是不为0，则按照其 Task 自定义次数接收，否则按照全局最大接收次数接收
-        val receiveMaxCount = if (task.sendWrapData().receiveMaxCount != 0) task.sendWrapData().receiveMaxCount else manager.config.receiveMaxCount
+        val receiveMaxCount =
+            if (task.sendWrapData().receiveMaxCount != 0) task.sendWrapData().receiveMaxCount else manager.config.receiveMaxCount
         // 接收次数小于最大次数，则代表一定进行回调
         block.invoke(task.receiveCount < receiveMaxCount)
         if (task.receiveCount < receiveMaxCount) {

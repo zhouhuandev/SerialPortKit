@@ -1,5 +1,6 @@
 package com.serial.port.manage.config
 
+import com.serial.port.kit.core.SerialPort
 import com.serial.port.manage.listener.OnAddressCheckCall
 import com.serial.port.manage.listener.OnDataCheckCall
 import java.util.concurrent.ExecutorService
@@ -53,6 +54,11 @@ data class SerialPortConfig(
      * 注：大批量数据建议阻塞方式读取数据，isBlockingReadData 则建议为 true
      */
     val isBlockingReadData: Boolean = false,
+
+    /**
+     * 提权 su shell 类型
+     */
+    val cmdSuShell: Int = SerialPort.CMD_BIN_SU_SHELL,
 
     /**
      * 自定义数据校验
