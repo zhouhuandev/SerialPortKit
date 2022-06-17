@@ -3,6 +3,7 @@ package com.serial.port.manage.thread
 import android.util.Log
 import com.serial.port.kit.core.SerialPort
 import com.serial.port.manage.data.DataProcess
+import java.io.FileInputStream
 import java.io.IOException
 
 /**
@@ -39,18 +40,12 @@ internal class SerialReadThread(
             // 读取数据
             val inputStream = mSerialPort.inputStream
             try {
-                if (inputStream.available() > 0) {  // 防止阻塞
-                    if (dataProcess.isCustom) {
-                        // 自定义协议解析
-                        dataProcess.manager.config.dataCheckCall?.customCheck(inputStream) {
-                            dataProcess.processingRecData(it.data, it.size)
-                        }
-                    } else {
-                        val buffer = ByteArray(dataProcess.maxSize)
-                        val size = inputStream.read(buffer)
-                        if (size > 0) {
-                            dataProcess.processingRecData(buffer, size)
-                        }
+                // 阻塞方式读取数据有可能无法有效检测超时任务
+                if (dataProcess.manager.config.isBlockingReadData) {
+                    processRecData(inputStream)
+                } else {
+                    if (inputStream.available() > 0) {  // 防止阻塞
+                        processRecData(inputStream)
                     }
                 }
                 // 暂停一点时间，免得一直循环造成CPU占用率过高
@@ -69,4 +64,18 @@ internal class SerialReadThread(
         }
     }
 
+    private fun processRecData(inputStream: FileInputStream) {
+        if (dataProcess.isCustom) {
+            // 自定义协议解析
+            dataProcess.manager.config.dataCheckCall?.customCheck(inputStream) {
+                dataProcess.processingRecData(it.data, it.size)
+            }
+        } else {
+            val buffer = ByteArray(dataProcess.maxSize)
+            val size = inputStream.read(buffer)
+            if (size > 0) {
+                dataProcess.processingRecData(buffer, size)
+            }
+        }
+    }
 }

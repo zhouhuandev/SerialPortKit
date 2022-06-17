@@ -49,6 +49,12 @@ data class SerialPortConfig(
     val isCustom: Boolean = false,
 
     /**
+     * 是否阻塞方式读取数据
+     * 注：大批量数据建议阻塞方式读取数据，isBlockingReadData 则建议为 true
+     */
+    val isBlockingReadData: Boolean = false,
+
+    /**
      * 自定义数据校验
      */
     val dataCheckCall: OnDataCheckCall?,

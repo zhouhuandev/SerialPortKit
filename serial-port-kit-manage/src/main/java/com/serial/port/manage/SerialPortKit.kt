@@ -38,6 +38,7 @@ class SerialPortKit private constructor(builder: Builder) {
         internal var receiveMaxCount = 1
         internal var isReceiveMaxSize: Boolean = false
         internal var isCustom: Boolean = false
+        internal var isBlockingReadData: Boolean = false
         internal var dataCheckCall: OnDataCheckCall? = null
         internal var addressCheckCall: OnAddressCheckCall? = null
         internal var debug = false
@@ -60,6 +61,10 @@ class SerialPortKit private constructor(builder: Builder) {
         fun isCustom(isCustom: Boolean, dataCheckCall: OnDataCheckCall? = null): Builder = apply {
             this.isCustom = isCustom
             this.dataCheckCall = dataCheckCall
+        }
+
+        fun isBlockingReadData(isBlockingReadData: Boolean): Builder = apply {
+            this.isBlockingReadData = isBlockingReadData
         }
 
         fun addressCheckCall(addressCheckCall: OnAddressCheckCall): Builder =
@@ -96,6 +101,7 @@ class SerialPortKit private constructor(builder: Builder) {
             receiveMaxCount = builder.receiveMaxCount,
             isReceiveMaxSize = builder.isReceiveMaxSize,
             isCustom = builder.isCustom,
+            isBlockingReadData = builder.isBlockingReadData,
             dataCheckCall = builder.dataCheckCall,
             addressCheckCall = builder.addressCheckCall,
             debug = builder.debug,
