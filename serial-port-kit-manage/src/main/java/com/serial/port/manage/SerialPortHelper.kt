@@ -1,5 +1,6 @@
 package com.serial.port.manage
 
+import android.os.SystemClock
 import android.util.Log
 import com.serial.port.kit.core.SerialPort
 import com.serial.port.manage.data.BaseSerialPortTask
@@ -142,7 +143,7 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
         manager.dispatcher.dispatch(task) {
             isSendSuccess = it.isSendSuccess
             if (isSendSuccess) {
-                it.sendTime = System.currentTimeMillis()
+                it.sendTime = SystemClock.elapsedRealtime()
             }
         }
         if (!isSendSuccess) {
@@ -230,7 +231,7 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
         block.invoke(task.receiveCount < receiveMaxCount)
         if (task.receiveCount < receiveMaxCount) {
             task.receiveCount++
-            task.waitTime = System.currentTimeMillis()
+            task.waitTime = SystemClock.elapsedRealtime()
             switchThread(task) {
                 task.onDataReceiverListener().onSuccess(data.apply {
                     duration = abs(task.waitTime - task.sendTime)
@@ -272,13 +273,14 @@ internal class SerialPortHelper(private val manager: SerialPortManager) {
      * 检测是否超时
      */
     private fun isTimeOut(task: BaseSerialPortTask): Boolean {
-        val currentTimeMillis = System.currentTimeMillis()
+        val currentTimeMillis = SystemClock.elapsedRealtime()
         return if (task.waitTime == 0L) {
-            // 表示一直没收到数据
+            task.waitTime = SystemClock.elapsedRealtime()
+            // 发送数据超时
             val sendOffset = abs(currentTimeMillis - task.sendTime)
             sendOffset > task.sendWrapData().sendOutTime
         } else {
-            // 有接收到过数据，但是距离上一个数据已经超时
+            // 有接收到过数据，但是距离上一个数据已经超时或者第一次接收数据超时
             val waitOffset = abs(currentTimeMillis - task.waitTime)
             waitOffset > task.sendWrapData().waitOutTime
         }
