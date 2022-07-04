@@ -69,7 +69,7 @@ dependencyResolutionManagement {
 在 app `build.gradle`中添加
 
 ```groovy
-def serialPortVersion = "1.0.6-SNAPSHOT"
+def serialPortVersion = "1.0.6.1-SNAPSHOT"
 
 implementation "io.github.zhouhuandev:serial-port-kit-manage:$serialPortVersion" // require kotlin 1.7.0
 
