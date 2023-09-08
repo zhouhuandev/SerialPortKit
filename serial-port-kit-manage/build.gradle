@@ -48,6 +48,6 @@ dependencies {
     if (modeOffline) {
         implementation(project(":serial-port-kit-core"))
     } else {
-        implementation 'io.github.zhouhuandev:serial-port-kit-core:1.0.6.1-SNAPSHOT'
+        implementation "io.github.zhouhuandev:serial-port-kit-core:${getArtifactVersion()}"
     }
 }

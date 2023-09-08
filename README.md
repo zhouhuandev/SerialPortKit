@@ -48,6 +48,10 @@ repositories {
         name 'maven-snapshot'
         url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
     }
+    maven {
+        name 'maven-releases'
+        url 'https://s01.oss.sonatype.org/content/repositories/releases/'
+    }
 }
 ```
 
@@ -62,6 +66,10 @@ dependencyResolutionManagement {
             name 'maven-snapshot'
             url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
         }
+        maven {
+            name 'maven-releases'
+            url 'https://s01.oss.sonatype.org/content/repositories/releases/'
+        }
     }
 }
 ```
@@ -69,7 +77,7 @@ dependencyResolutionManagement {
 在 app `build.gradle`中添加
 
 ```groovy
-def serialPortVersion = "1.0.6.1-SNAPSHOT"
+def serialPortVersion = "1.0.0"
 
 implementation "io.github.zhouhuandev:serial-port-kit-manage:$serialPortVersion" // require kotlin 1.7.0
 

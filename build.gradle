@@ -5,7 +5,7 @@ plugins {
     id 'org.jetbrains.kotlin.android' version '1.6.10' apply false
 }
 
-task clean(type: Delete) {
+tasks.register('clean', Delete) {
     delete rootProject.buildDir
 }
 
@@ -15,7 +15,7 @@ file('local.properties').withInputStream { input ->
 
 subprojects {
     project.afterEvaluate {
-        task artifactSourcesJar(type: Jar) {
+        tasks.register('artifactSourcesJar', Jar) {
             if (project.hasProperty('android')) {
                 from android.sourceSets.main.java.srcDirs
                 from android.sourceSets.main.kotlin.srcDirs
@@ -50,7 +50,7 @@ subprojects {
                         groupId mvnConfig.group
                         version mvnConfig.version
 
-                        artifact project.file("build/outputs/aar/${project.name}-release.aar")
+                        artifact project.file("${project.buildDir}/outputs/aar/${project.name}-release.aar")
                         artifact artifactSourcesJar
 
                         pom {
@@ -112,7 +112,7 @@ subprojects {
                                     }
                                 }
                             }
-                            configurations.all { configuration ->
+                            configurations.configureEach { configuration ->
                                 if (configuration.name in ['compileOnly', 'api', 'implementation', 'runtime']) {
                                     configuration.dependencies.each { addDependency(it, configuration.name) }
                                 }
