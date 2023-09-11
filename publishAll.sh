@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-opt_version='1.0.6.2'
+opt_version='1.0.6.3'
 opt_snapshot='true'
 
 while [[ $# -gt 0 ]]; do
@@ -26,5 +26,5 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-#./publish.sh serial-port-kit-core --v "${opt_version}" --snapshot "${opt_snapshot}"
+./publish.sh serial-port-kit-core --v "${opt_version}" --snapshot "${opt_snapshot}"
 ./publish.sh serial-port-kit-manage --v "${opt_version}" --snapshot "${opt_snapshot}"

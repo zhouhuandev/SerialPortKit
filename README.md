@@ -45,9 +45,10 @@
 ```groovy
 repositories {
     maven {
-        name 'maven-snapshot'
-        url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+        name 'maven-repo1'
+        url 'https://repo1.maven.org/maven2/'
     }
+    // 或者
     maven {
         name 'maven-releases'
         url 'https://s01.oss.sonatype.org/content/repositories/releases/'
@@ -63,9 +64,10 @@ repositories {
 dependencyResolutionManagement {
     repositories {
         maven {
-            name 'maven-snapshot'
-            url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+            name 'maven-repo1'
+            url 'https://repo1.maven.org/maven2/'
         }
+        // 或者
         maven {
             name 'maven-releases'
             url 'https://s01.oss.sonatype.org/content/repositories/releases/'

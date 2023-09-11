@@ -42,6 +42,10 @@ dependencyResolutionManagement {
             name 'maven-releases'
             url 'https://s01.oss.sonatype.org/content/repositories/releases/'
         }
+        maven {
+            name 'maven-repo1'
+            url 'https://repo1.maven.org/maven2/'
+        }
     }
 }
 rootProject.name = "SerialPortKit"
