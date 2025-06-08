@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-opt_version='1.0.6.3'
-opt_snapshot='true'
+opt_version='1.0.6.6'
+opt_snapshot='false'
 
 while [[ $# -gt 0 ]]; do
   case $1 in
